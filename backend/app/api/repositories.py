@@ -24,14 +24,24 @@ async def discover_repositories(
     provider: str = "github",
     session: Session = Depends(get_session)
 ):
-    """Discovers accessible repositories from connected provider."""
+    """Discovers accessible repositories from connected provider using stored in-app token."""
     intg = session.exec(select(Integration).where(Integration.provider == provider)).first()
-    token = decrypt_secret(intg.encrypted_token) if intg else None
+    if not intg or intg.status != "connected" or not intg.encrypted_token:
+        return {
+            "provider": provider,
+            "connected": False,
+            "total": 0,
+            "repositories": [],
+            "message": f"{provider.capitalize()} is not connected. Please connect your account with a Personal Access Token in the Integrations tab."
+        }
 
+    token = decrypt_secret(intg.encrypted_token) if intg else None
     prov = get_provider(provider)
     repos = await prov.list_repositories(token=token)
     return {
         "provider": provider,
+        "connected": True,
+        "account_name": intg.account_name,
         "total": len(repos),
         "repositories": [r.model_dump() for r in repos]
     }

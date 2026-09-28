@@ -31,6 +31,74 @@ def list_integrations(session: Session = Depends(get_session)):
         })
     return results
 
+@router.post("/connect")
+async def connect_integration(
+    req: IntegrationConnectRequest,
+    session: Session = Depends(get_session)
+):
+    """
+    Connects to GitHub or GitLab directly from the application using a user-provided token.
+    Validates token directly against GitHub/GitLab API.
+    """
+    prov = get_provider(req.provider)
+    token = req.token.strip() if req.token else ""
+    if not token:
+        raise HTTPException(status_code=400, detail="Personal Access Token is required to connect.")
+    
+    try:
+        user_info = await prov.validate_and_get_user(token=token, custom_url=req.gitlab_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to connect to {req.provider}: {str(e)}")
+
+    intg = session.exec(select(Integration).where(Integration.provider == req.provider)).first()
+    account_name = user_info.get("login") or req.account_name or f"{req.provider}_user"
+    account_id = user_info.get("id", "0")
+    
+    if not intg:
+        intg = Integration(
+            org_id=1,
+            provider=req.provider,
+            status="connected",
+            auth_type="token",
+            account_name=account_name,
+            account_id=str(account_id),
+            encrypted_token=encrypt_secret(token),
+            webhook_secret=f"opsmemory-{req.provider}-webhook-secret",
+            last_sync_at=datetime.now(timezone.utc)
+        )
+    else:
+        intg.status = "connected"
+        intg.auth_type = "token"
+        intg.account_name = account_name
+        intg.account_id = str(account_id)
+        intg.encrypted_token = encrypt_secret(token)
+        intg.last_sync_at = datetime.now(timezone.utc)
+
+    session.add(intg)
+    session.add(AuditLog(
+        org_id=1,
+        actor=account_name,
+        action="integration_connected",
+        resource_type="integration",
+        resource_id=req.provider,
+        details=f"Connected {req.provider.upper()} integration for account {account_name} from application UI."
+    ))
+    session.commit()
+    session.refresh(intg)
+
+    return {
+        "status": "success",
+        "message": f"{req.provider.capitalize()} account '{account_name}' connected successfully!",
+        "integration": {
+            "id": intg.id,
+            "provider": intg.provider,
+            "account_name": intg.account_name,
+            "status": intg.status
+        }
+    }
+
 @router.get("/{provider}/auth-url")
 def get_oauth_url(provider: str, redirect_uri: str = "http://localhost:5173/integrations/callback"):
     prov = get_provider(provider)

@@ -437,8 +437,9 @@ class RepositoryOnboardRequest(BaseModel):
 
 class IntegrationConnectRequest(BaseModel):
     provider: str # github, gitlab
-    token: Optional[str] = None
+    token: str
     account_name: Optional[str] = None
+    gitlab_url: Optional[str] = None
 
 class SystemStatusResponse(BaseModel):
     backend: str = "Operational"

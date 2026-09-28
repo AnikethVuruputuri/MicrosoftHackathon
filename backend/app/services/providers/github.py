@@ -93,6 +93,43 @@ class GitHubProvider(DevOpsProvider):
             data["account_id"] = str(user_data.get("id", "gh_user"))
             return data
 
+    async def validate_and_get_user(self, token: str, custom_url: Optional[str] = None) -> Dict[str, Any]:
+        """Validates GitHub Personal Access Token directly against GitHub API."""
+        clean_token = token.strip() if token else ""
+        if not clean_token:
+            raise ValueError("GitHub token cannot be empty.")
+        
+        if clean_token in ["demo", "ghp_demo", "gho_demo"]:
+            return {
+                "login": "demo-github-user",
+                "name": "Demo GitHub Operator",
+                "id": "1001",
+                "avatar_url": None,
+                "html_url": "https://github.com/demo-github-user"
+            }
+
+        headers = self._get_headers(clean_token)
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get("https://api.github.com/user", headers=headers, timeout=10.0)
+                if resp.status_code == 401:
+                    raise ValueError("Authentication failed: GitHub token is invalid or expired.")
+                if resp.status_code == 403:
+                    raise ValueError("Access forbidden: GitHub token lacks necessary permissions (needs 'repo' and 'workflow' scopes).")
+                if resp.status_code != 200:
+                    raise ValueError(f"GitHub API error (HTTP {resp.status_code}): {resp.text}")
+                
+                data = resp.json()
+                return {
+                    "login": data.get("login", "github-user"),
+                    "name": data.get("name") or data.get("login"),
+                    "id": str(data.get("id")),
+                    "avatar_url": data.get("avatar_url"),
+                    "html_url": data.get("html_url")
+                }
+        except httpx.RequestError as e:
+            raise ValueError(f"Could not connect to GitHub API: {str(e)}")
+
     async def list_repositories(self, token: Optional[str] = None) -> List[NormalizedRepository]:
         auth_token = token or self.default_token
         if auth_token and len(auth_token) > 5 and not auth_token.startswith("gho_demo"):

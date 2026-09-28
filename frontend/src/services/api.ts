@@ -160,6 +160,24 @@ export async function submitOAuthCallback(provider: string, code: string): Promi
   return res.json();
 }
 
+export async function connectIntegration(data: {
+  provider: string;
+  token: string;
+  gitlab_url?: string;
+  account_name?: string;
+}): Promise<any> {
+  const res = await fetch(`${API_BASE}/integrations/connect`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to connect ${data.provider}`);
+  }
+  return res.json();
+}
+
 export async function disconnectIntegration(provider: string): Promise<any> {
   const res = await fetch(`${API_BASE}/integrations/${provider}/disconnect`, {
     method: 'POST'

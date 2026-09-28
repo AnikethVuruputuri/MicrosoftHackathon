@@ -54,44 +54,35 @@ def seed_database():
         )
         session.add(admin_user)
 
-        # 2. Integrations (GitHub & GitLab)
+        # 2. Integrations (GitHub & GitLab) - Clean initial state: DISCONNECTED
         gh_integration = Integration(
             org_id=org.id,
             provider="github",
-            status="connected",
-            auth_type="oauth",
-            account_name="acme-engineering",
-            account_id="gh_org_101",
-            encrypted_token=encrypt_secret("gho_demo_access_token_mock_val"),
+            status="disconnected",
+            auth_type="token",
+            account_name="Not connected",
+            account_id="",
+            encrypted_token=None,
             webhook_secret="opsmemory-github-webhook-secret",
-            last_sync_at=now - timedelta(minutes=5)
+            last_sync_at=None
         )
         gl_integration = Integration(
             org_id=org.id,
             provider="gitlab",
-            status="connected",
-            auth_type="oauth",
-            account_name="fintech-group",
-            account_id="gl_group_202",
-            encrypted_token=encrypt_secret("glpat_demo_access_token_val"),
+            status="disconnected",
+            auth_type="token",
+            account_name="Not connected",
+            account_id="",
+            encrypted_token=None,
             webhook_secret="opsmemory-gitlab-webhook-secret",
-            last_sync_at=now - timedelta(minutes=15)
+            last_sync_at=None
         )
         session.add_all([gh_integration, gl_integration])
         session.commit()
         session.refresh(gh_integration)
         session.refresh(gl_integration)
 
-        # 3. Repositories
-        repos_data = [
-            Repository(org_id=org.id, integration_id=gh_integration.id, provider="github", external_repo_id="10101", name="payment-api", full_name="acme/payment-api", default_branch="main", monitored_branch="main", environment="production", is_monitored=True, status="active", last_sync_at=now - timedelta(minutes=5)),
-            Repository(org_id=org.id, integration_id=gh_integration.id, provider="github", external_repo_id="10102", name="user-service", full_name="acme/user-service", default_branch="main", monitored_branch="main", environment="production", is_monitored=True, status="active", last_sync_at=now - timedelta(minutes=10)),
-            Repository(org_id=org.id, integration_id=gh_integration.id, provider="github", external_repo_id="10103", name="order-service", full_name="acme/order-service", default_branch="main", monitored_branch="main", environment="production", is_monitored=True, status="active", last_sync_at=now - timedelta(minutes=20)),
-            Repository(org_id=org.id, integration_id=gh_integration.id, provider="github", external_repo_id="10104", name="notification-service", full_name="acme/notification-service", default_branch="main", monitored_branch="main", environment="production", is_monitored=True, status="active", last_sync_at=now - timedelta(hours=1)),
-            Repository(org_id=org.id, integration_id=gl_integration.id, provider="gitlab", external_repo_id="20201", name="inventory-service", full_name="fintech/inventory-service", default_branch="main", monitored_branch="main", environment="production", is_monitored=True, status="active", last_sync_at=now - timedelta(hours=2)),
-        ]
-        session.add_all(repos_data)
-        session.commit()
+        # 3. Repositories - Clean state (populated when user onboards from connected accounts in UI)
 
         # 4. Services
         services_data = [

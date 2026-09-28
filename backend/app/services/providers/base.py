@@ -34,6 +34,11 @@ class DevOpsProvider(ABC):
         pass
 
     @abstractmethod
+    async def validate_and_get_user(self, token: str, custom_url: Optional[str] = None) -> Dict[str, Any]:
+        """Validates token directly against provider API and returns user profile."""
+        pass
+
+    @abstractmethod
     async def list_repositories(self, token: Optional[str] = None) -> List[NormalizedRepository]:
         """Discovers accessible repositories/projects."""
         pass

@@ -19,9 +19,24 @@ async def list_all_pipelines(
 ):
     """Returns workflow and pipeline runs across monitored repositories."""
     repos = session.exec(select(Repository).where(Repository.is_monitored == True)).all()
+    if not repos:
+        return {
+            "total": 0,
+            "summary": {
+                "total_runs": 0,
+                "success_count": 0,
+                "failure_count": 0,
+                "success_rate_percent": 0.0,
+                "avg_duration_seconds": 0
+            },
+            "runs": []
+        }
     
     now = datetime.now(timezone.utc)
     all_runs: List[dict] = []
+
+    # Filter runs to only match connected and monitored repositories
+    repo_names = {r.full_name.lower() for r in repos} | {r.name.lower() for r in repos}
 
     # Curated real-time pipeline runs matching the organizational knowledge base
     deterministic_runs = [
@@ -179,7 +194,12 @@ async def list_all_pipelines(
         }
     ]
 
-    all_runs.extend(deterministic_runs)
+    # Only include runs for repositories that are actually monitored
+    all_runs = [
+        r for r in deterministic_runs 
+        if r["repository"].lower() in repo_names 
+        or any(rn in r["repository"].lower() for rn in repo_names)
+    ]
 
     # Apply filters
     filtered = all_runs

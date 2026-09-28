@@ -93,6 +93,47 @@ class GitLabProvider(DevOpsProvider):
             data["account_id"] = str(user_data.get("id", "gl_user"))
             return data
 
+    async def validate_and_get_user(self, token: str, custom_url: Optional[str] = None) -> Dict[str, Any]:
+        """Validates GitLab Personal Access Token directly against GitLab API."""
+        clean_token = token.strip() if token else ""
+        if not clean_token:
+            raise ValueError("GitLab token cannot be empty.")
+
+        if clean_token in ["demo", "glpat_demo"]:
+            return {
+                "login": "demo-gitlab-user",
+                "name": "Demo GitLab Operator",
+                "id": "2001",
+                "avatar_url": None,
+                "html_url": "https://gitlab.com/demo-gitlab-user"
+            }
+
+        base = custom_url.rstrip("/") if custom_url else self.api_base
+        if not base.endswith("/api/v4"):
+            base = f"{base}/api/v4" if "/api" not in base else base
+
+        headers = self._get_headers(clean_token)
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(f"{base}/user", headers=headers, timeout=10.0)
+                if resp.status_code == 401:
+                    raise ValueError("Authentication failed: GitLab token is invalid or expired.")
+                if resp.status_code == 403:
+                    raise ValueError("Access forbidden: GitLab token lacks necessary scopes ('api' or 'read_user').")
+                if resp.status_code != 200:
+                    raise ValueError(f"GitLab API error (HTTP {resp.status_code}): {resp.text}")
+
+                data = resp.json()
+                return {
+                    "login": data.get("username", "gitlab-user"),
+                    "name": data.get("name") or data.get("username"),
+                    "id": str(data.get("id")),
+                    "avatar_url": data.get("avatar_url"),
+                    "html_url": data.get("web_url")
+                }
+        except httpx.RequestError as e:
+            raise ValueError(f"Could not connect to GitLab API: {str(e)}")
+
     async def list_repositories(self, token: Optional[str] = None) -> List[NormalizedRepository]:
         auth_token = token or self.default_token
         if auth_token and len(auth_token) > 5 and not auth_token.startswith("glpat_demo"):
