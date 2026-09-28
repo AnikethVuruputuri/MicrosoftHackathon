@@ -216,3 +216,48 @@ export interface StageLog {
   status: 'completed' | 'running' | 'pending';
   summary: string;
 }
+
+export interface PipelineJob {
+  name: string;
+  stage: string;
+  status: 'success' | 'failed' | 'in_progress' | 'queued';
+  duration_seconds?: number;
+  logs?: string;
+}
+
+export interface PipelineRun {
+  id: string;
+  provider: 'github' | 'gitlab';
+  repository: string;
+  run_number: number;
+  name: string;
+  branch: string;
+  commit_sha: string;
+  commit_message: string;
+  author: string;
+  event_type: string;
+  status: 'success' | 'failed' | 'in_progress' | 'cancelled';
+  conclusion?: string;
+  started_at: string;
+  completed_at?: string;
+  duration_seconds: number;
+  html_url: string;
+  jobs?: PipelineJob[];
+  raw_logs?: string;
+  incident_id?: number | null;
+  incident_code?: string | null;
+}
+
+export interface PipelinesSummary {
+  total_runs: number;
+  success_count: number;
+  failure_count: number;
+  success_rate_percent: number;
+  avg_duration_seconds: number;
+}
+
+export interface PipelinesResponse {
+  total: number;
+  summary: PipelinesSummary;
+  runs: PipelineRun[];
+}

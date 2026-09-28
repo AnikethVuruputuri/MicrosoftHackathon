@@ -7,7 +7,9 @@ import {
   StageLog,
   IntegrationInfo,
   RepositoryInfo,
-  AuditLogItem
+  AuditLogItem,
+  PipelinesResponse,
+  PipelineRun
 } from '../types';
 
 const API_BASE = '/api';
@@ -209,5 +211,21 @@ export async function onboardRepository(data: {
 export async function fetchAuditLogs(): Promise<AuditLogItem[]> {
   const res = await fetch(`${API_BASE}/audit`);
   if (!res.ok) throw new Error('Failed to fetch audit logs');
+  return res.json();
+}
+
+// Pipelines API
+export async function fetchPipelines(params?: {
+  repository?: string;
+  status?: string;
+  branch?: string;
+}): Promise<PipelinesResponse> {
+  const query = new URLSearchParams();
+  if (params?.repository) query.append('repository', params.repository);
+  if (params?.status) query.append('status', params.status);
+  if (params?.branch) query.append('branch', params.branch);
+
+  const res = await fetch(`${API_BASE}/pipelines?${query.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch pipeline workflow runs');
   return res.json();
 }

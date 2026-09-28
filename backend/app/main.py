@@ -16,6 +16,7 @@ from app.api.system import router as system_router
 from app.api.auth import router as auth_router
 from app.api.integrations import router as integrations_router
 from app.api.repositories import router as repositories_router
+from app.api.pipelines import router as pipelines_router
 from app.api.webhooks import router as webhooks_router
 from app.api.audit import router as audit_router
 
@@ -56,6 +57,7 @@ app.include_router(system_router, prefix=settings.API_V1_STR)
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(integrations_router, prefix=settings.API_V1_STR)
 app.include_router(repositories_router, prefix=settings.API_V1_STR)
+app.include_router(pipelines_router, prefix=settings.API_V1_STR)
 app.include_router(webhooks_router, prefix=settings.API_V1_STR)
 app.include_router(audit_router, prefix=settings.API_V1_STR)
 
