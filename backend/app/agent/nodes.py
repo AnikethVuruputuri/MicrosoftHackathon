@@ -432,3 +432,55 @@ def retain_learning_node(state: OpsMemoryState) -> Dict[str, Any]:
         "learning_summary": f"Incident {incident_code} knowledge retained in Hindsight.",
         "stage_logs": state.get("stage_logs", []) + [stage_log]
     }
+
+
+def evaluate_automation_candidate_node(state: OpsMemoryState) -> Dict[str, Any]:
+    """Stage 7b: Evaluates deterministic policy engine for candidate self-recovery action."""
+    from app.services.automation.policy_engine import AutomationPolicyEngine
+
+    incident_id = state.get("incident_id")
+    service = state.get("service", "unknown_service")
+    environment = state.get("environment", "production")
+    diag = state.get("initial_diagnosis", {})
+    recommended_action = diag.get("recommended_action", "Rollback")
+    confidence = diag.get("confidence_score", 0.85)
+
+    rec_lower = recommended_action.lower()
+    if "retry" in rec_lower:
+        action_type = "retry"
+    elif "restart" in rec_lower:
+        action_type = "restart"
+    elif "rollback" in rec_lower:
+        action_type = "rollback"
+    else:
+        action_type = "no_action"
+
+    with Session(engine) as session:
+        engine_policy = AutomationPolicyEngine(session)
+        decision, reason, risk = engine_policy.evaluate(
+            action_type=action_type,
+            target=service,
+            environment=environment,
+            incident_id=incident_id,
+            confidence=confidence
+        )
+
+    stage_log = {
+        "stage": "evaluate_automation_policy",
+        "title": "Deterministic Safety & Policy Evaluation",
+        "status": "completed",
+        "summary": f"Policy decision: [{decision.value.upper()}]. Action: {action_type} (Risk: {risk.value.upper()}). Reason: {reason}"
+    }
+
+    return {
+        "automation_candidate": {
+            "action_type": action_type,
+            "target": service,
+            "risk_level": risk.value,
+            "policy_result": decision.value,
+            "reason": reason
+        },
+        "automation_decision": decision.value,
+        "stage_logs": state.get("stage_logs", []) + [stage_log]
+    }
+

@@ -19,6 +19,7 @@ from app.api.repositories import router as repositories_router
 from app.api.pipelines import router as pipelines_router
 from app.api.webhooks import router as webhooks_router
 from app.api.audit import router as audit_router
+from app.api.automation import router as automation_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,6 +61,7 @@ app.include_router(repositories_router, prefix=settings.API_V1_STR)
 app.include_router(pipelines_router, prefix=settings.API_V1_STR)
 app.include_router(webhooks_router, prefix=settings.API_V1_STR)
 app.include_router(audit_router, prefix=settings.API_V1_STR)
+app.include_router(automation_router, prefix=settings.API_V1_STR)
 
 @app.get("/api/health")
 def health_check():

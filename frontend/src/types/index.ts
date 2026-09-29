@@ -261,3 +261,86 @@ export interface PipelinesResponse {
   summary: PipelinesSummary;
   runs: PipelineRun[];
 }
+
+export interface AutomationAction {
+  id: number;
+  action_code: string;
+  org_id: number;
+  incident_id?: number | null;
+  deployment_id?: number | null;
+  action_type: 'retry' | 'restart' | 'rollback' | 'no_action' | string;
+  provider: string;
+  repository: string;
+  environment: string;
+  target: string;
+  reason: string;
+  risk_level: 'low' | 'controlled' | 'high' | 'very_high';
+  policy_result: 'approved' | 'approval_required' | 'blocked' | 'no_action';
+  policy_reason: string;
+  approval_required: boolean;
+  approved_by?: string | null;
+  approval_decision?: string | null;
+  approval_reason?: string | null;
+  approval_timestamp?: string | null;
+  status: 'pending' | 'awaiting_approval' | 'running' | 'succeeded' | 'failed' | 'rolled_back' | 'rejected' | 'blocked' | 'no_action';
+  execution_details?: string | null;
+  verification_status: 'not_started' | 'verifying' | 'healthy' | 'degraded' | 'failed';
+  verification_details?: string | null;
+  recovery_time_seconds?: number | null;
+  compensation_action?: string | null;
+  compensation_status?: string | null;
+  is_dry_run: boolean;
+  human_feedback?: 'appropriate' | 'inappropriate' | 'neutral' | null;
+  human_feedback_notes?: string | null;
+  retained_to_hindsight: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutomationPolicy {
+  id: number;
+  org_id: number;
+  enabled: boolean;
+  mode: 'approval_required' | 'autonomous' | 'dry_run';
+  dry_run: boolean;
+  allow_retry: boolean;
+  max_retries: number;
+  retry_cooldown_seconds: number;
+  allow_restart: boolean;
+  max_restarts: number;
+  restart_cooldown_seconds: number;
+  allow_rollback: boolean;
+  rollback_approval_required: boolean;
+  rollback_cooldown_seconds: number;
+  health_timeout_seconds: number;
+  verification_interval_seconds: number;
+  max_attempts_per_incident: number;
+  allowed_environments: string;
+  escalation_channel: string;
+}
+
+export interface AutomationEffectiveness {
+  id: number;
+  failure_fingerprint: string;
+  action_type: string;
+  attempts: number;
+  successes: number;
+  failures: number;
+  avg_recovery_time_seconds: number;
+  last_recovery_at?: string | null;
+}
+
+export interface AutomationDashboardData {
+  metrics: {
+    total_actions: number;
+    successful_recoveries: number;
+    awaiting_approval: number;
+    prevented_or_blocked: number;
+    avg_recovery_seconds: number;
+  };
+  pending_actions: AutomationAction[];
+  recent_actions: AutomationAction[];
+  effectiveness: AutomationEffectiveness[];
+  policy: AutomationPolicy;
+}
+

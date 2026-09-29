@@ -55,6 +55,11 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
 
+    # Automation & Self-Recovery
+    AUTOMATION_ENABLED: bool = os.getenv("AUTOMATION_ENABLED", "false").lower() in ("true", "1", "yes")
+    AUTOMATION_DRY_RUN: bool = os.getenv("AUTOMATION_DRY_RUN", "false").lower() in ("true", "1", "yes")
+    AUTOMATION_APPROVAL_REQUIRED: bool = True
+
     class Config:
         env_file = ".env"
         extra = "ignore"

@@ -9,7 +9,10 @@ import {
   RepositoryInfo,
   AuditLogItem,
   PipelinesResponse,
-  PipelineRun
+  PipelineRun,
+  AutomationAction,
+  AutomationPolicy,
+  AutomationDashboardData
 } from '../types';
 
 const API_BASE = '/api';
@@ -401,3 +404,114 @@ export async function fetchPipelines(params?: {
   if (!res.ok) throw new Error('Failed to fetch pipeline workflow runs');
   return res.json();
 }
+
+// Automation & Recovery API
+export async function fetchAutomationStatus(): Promise<any> {
+  const res = await fetch(`${API_BASE}/automation/status`);
+  if (!res.ok) throw new Error('Failed to fetch automation status');
+  return res.json();
+}
+
+export async function fetchAutomationDashboard(): Promise<AutomationDashboardData> {
+  const res = await fetch(`${API_BASE}/automation/dashboard`);
+  if (!res.ok) throw new Error('Failed to fetch automation dashboard');
+  return res.json();
+}
+
+export async function fetchAutomationActions(params?: {
+  status?: string;
+  action_type?: string;
+  incident_id?: number;
+  limit?: number;
+}): Promise<AutomationAction[]> {
+  const query = new URLSearchParams();
+  if (params?.status) query.append('status', params.status);
+  if (params?.action_type) query.append('action_type', params.action_type);
+  if (params?.incident_id) query.append('incident_id', params.incident_id.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+
+  const res = await fetch(`${API_BASE}/automation/actions?${query.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch automation actions');
+  return res.json();
+}
+
+export async function fetchAutomationAction(id: number): Promise<AutomationAction> {
+  const res = await fetch(`${API_BASE}/automation/actions/${id}`);
+  if (!res.ok) throw new Error(`Failed to fetch automation action #${id}`);
+  return res.json();
+}
+
+export async function approveAutomationAction(
+  id: number,
+  approvedBy: string = 'SRE On-Call',
+  reason?: string
+): Promise<{ status: string; action: AutomationAction }> {
+  const res = await fetch(`${API_BASE}/automation/actions/${id}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approved: true, approved_by: approvedBy, reason })
+  });
+  if (!res.ok) throw new Error('Failed to approve automation action');
+  return res.json();
+}
+
+export async function rejectAutomationAction(
+  id: number,
+  approvedBy: string = 'SRE On-Call',
+  reason?: string
+): Promise<{ status: string; action: AutomationAction }> {
+  const res = await fetch(`${API_BASE}/automation/actions/${id}/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approved: false, approved_by: approvedBy, reason })
+  });
+  if (!res.ok) throw new Error('Failed to reject automation action');
+  return res.json();
+}
+
+export async function submitAutomationFeedback(
+  id: number,
+  feedback: 'appropriate' | 'inappropriate' | 'neutral',
+  notes?: string
+): Promise<{ status: string; action: AutomationAction }> {
+  const res = await fetch(`${API_BASE}/automation/actions/${id}/feedback`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ feedback, notes })
+  });
+  if (!res.ok) throw new Error('Failed to submit automation feedback');
+  return res.json();
+}
+
+export async function simulateAutomation(
+  scenario: string,
+  dryRun: boolean = false,
+  serviceName?: string
+): Promise<any> {
+  const res = await fetch(`${API_BASE}/automation/simulate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scenario, dry_run: dryRun, service_name: serviceName })
+  });
+  if (!res.ok) throw new Error('Failed to execute automation simulation');
+  return res.json();
+}
+
+export async function fetchAutomationSettings(): Promise<AutomationPolicy> {
+  const res = await fetch(`${API_BASE}/automation/settings`);
+  if (!res.ok) throw new Error('Failed to fetch automation settings');
+  return res.json();
+}
+
+export async function updateAutomationSettings(
+  policy: Partial<AutomationPolicy>
+): Promise<AutomationPolicy> {
+  const res = await fetch(`${API_BASE}/automation/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(policy)
+  });
+  if (!res.ok) throw new Error('Failed to update automation settings');
+  return res.json();
+}
+

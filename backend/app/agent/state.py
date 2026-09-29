@@ -34,3 +34,9 @@ class OpsMemoryState(TypedDict):
     resolution_outcome: Optional[Dict[str, Any]]
     learning_summary: Optional[str]
     stage_logs: List[Dict[str, Any]]
+
+    # Safe Automation & Self-Recovery Subsystem
+    automation_candidate: Optional[Dict[str, Any]]
+    automation_action: Optional[Dict[str, Any]]
+    automation_decision: Optional[str]
+

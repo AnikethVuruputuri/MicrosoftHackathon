@@ -77,3 +77,29 @@ class DevOpsProvider(ABC):
     def normalize_webhook(self, headers: Dict[str, str], payload: Dict[str, Any]) -> Optional[NormalizedWebhookPayload]:
         """Converts raw provider webhook payload into normalized OpsMemory event."""
         pass
+
+    @abstractmethod
+    async def retry_pipeline_run(self, repo_id: str, run_id: str, token: Optional[str] = None) -> Dict[str, Any]:
+        """Triggers a retry of a failed pipeline or workflow run."""
+        pass
+
+    @abstractmethod
+    async def restart_service(self, service_name: str, environment: str = "production", token: Optional[str] = None) -> Dict[str, Any]:
+        """Triggers a controlled restart of service or dispatch workflow."""
+        pass
+
+    @abstractmethod
+    async def rollback_deployment(self, repo_id: str, target_sha: str, environment: str = "production", token: Optional[str] = None) -> Dict[str, Any]:
+        """Dispatches or triggers a rollback deployment to target_sha."""
+        pass
+
+    @abstractmethod
+    async def get_service_health(self, service_name: str, environment: str = "production", token: Optional[str] = None) -> Dict[str, Any]:
+        """Queries health status, error rates, and uptime for a service."""
+        pass
+
+    @abstractmethod
+    def supports_rollback(self, repo_id: str) -> bool:
+        """Checks if provider/repo has rollback capabilities configured."""
+        pass
+

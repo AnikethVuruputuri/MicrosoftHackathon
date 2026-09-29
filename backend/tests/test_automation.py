@@ -1,245 +1,207 @@
-import json
 import pytest
-import httpx
+from fastapi.testclient import TestClient
+from sqlmodel import Session, select
+from app.main import app
+from app.database.session import engine
+from app.config import settings
+from app.models.schemas import AutomationPolicy, AutomationAction, Incident
+from app.services.automation.policy_engine import AutomationPolicyEngine, PolicyDecision, RiskLevel
+from app.services.automation.manager import automation_manager
 
-from app.services.automation import (
-    AutomationContext,
-    CiRetryExecutor,
-    evaluate_automation_policy,
-    execute_automation,
-    select_automatic_action,
-)
-
-
-def make_context(**overrides):
-    values = {
-        "incident_id": 1,
-        "service_name": "checkout",
-        "environment": "staging",
-        "action": "retry",
-        "failure_fingerprint": "CHECKOUT_TIMEOUT_STAGING",
-        "confidence": 0.95,
-        "severity": "low",
-        "known_successful_pattern": True,
-        "health_check_count": 1,
-        "health_check_interval_seconds": 0,
-    }
-    values.update(overrides)
-    return AutomationContext(**values)
+client = TestClient(app)
 
 
-def test_policy_fails_closed_for_unknown_pattern_and_disabled_automation():
-    unknown = evaluate_automation_policy(
-        make_context(known_successful_pattern=False), automation_enabled=True
+def test_automation_status_endpoint():
+    response = client.get("/api/automation/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "global_enabled" in data
+    assert "mode" in data
+    assert "pending_approvals_count" in data
+
+
+def test_feature_flag_blocks_when_disabled():
+    with Session(engine) as session:
+        engine_policy = AutomationPolicyEngine(session)
+        policy = engine_policy.get_or_create_policy(org_id=1)
+        policy.enabled = False
+        session.add(policy)
+        session.commit()
+
+        # When global flag and org flag are False, action is blocked
+        settings.AUTOMATION_ENABLED = False
+        decision, reason, risk = engine_policy.evaluate(
+            action_type="retry",
+            target="run-101",
+            environment="production",
+            confidence=0.9
+        )
+        assert decision == PolicyDecision.BLOCKED
+        assert "disabled" in reason.lower()
+
+
+def test_deterministic_risk_classification():
+    with Session(engine) as session:
+        engine_policy = AutomationPolicyEngine(session)
+        assert engine_policy.classify_risk("retry") == RiskLevel.LOW
+        assert engine_policy.classify_risk("restart") == RiskLevel.CONTROLLED
+        assert engine_policy.classify_risk("rollback") == RiskLevel.HIGH
+        assert engine_policy.classify_risk("no_action") == RiskLevel.LOW
+
+
+def test_loop_protection_max_attempts():
+    import uuid
+    uid = uuid.uuid4().hex[:8]
+    with Session(engine) as session:
+        engine_policy = AutomationPolicyEngine(session)
+        policy = engine_policy.get_or_create_policy(org_id=1)
+        policy.enabled = True
+        session.add(policy)
+        session.commit()
+
+        # Create dummy incident
+        inc = Incident(
+            incident_code=f"INC-LOOP-{uid}",
+            title="Loop Test",
+            service_id=1,
+            service_name="payment-service",
+            environment="production",
+            severity="high",
+            status="investigating",
+            symptoms_summary="Testing loop protection"
+        )
+        session.add(inc)
+        session.commit()
+        session.refresh(inc)
+
+        # Insert 2 actions for this incident
+        for i in range(2):
+            act = AutomationAction(
+                action_code=f"ACT-LOOP-{uid}-{i}",
+                org_id=1,
+                incident_id=inc.id,
+                action_type="restart",
+                status="succeeded"
+            )
+            session.add(act)
+        session.commit()
+
+        # 3rd attempt should be BLOCKED by loop protection
+        decision, reason, _ = engine_policy.evaluate(
+            action_type="restart",
+            target="payment-service",
+            environment="production",
+            incident_id=inc.id,
+            confidence=0.95
+        )
+        assert decision == PolicyDecision.BLOCKED
+        assert "Max automation attempts" in reason
+
+
+def test_explicit_no_action_for_ambiguous_incident():
+    with Session(engine) as session:
+        engine_policy = AutomationPolicyEngine(session)
+        decision, reason, _ = engine_policy.evaluate(
+            action_type="no_action",
+            target="auth-service",
+            environment="production",
+            confidence=0.4
+        )
+        assert decision == PolicyDecision.NO_ACTION
+
+
+def test_approval_gate_and_rejection():
+    import uuid
+    uid = uuid.uuid4().hex[:8]
+    with Session(engine) as session:
+        # Create an action requiring approval
+        act = AutomationAction(
+            action_code=f"ACT-GATE-{uid}",
+            org_id=1,
+            action_type="rollback",
+            provider="github",
+            target="c9a8b7c",
+            environment="production",
+            status="awaiting_approval",
+            policy_result="approval_required",
+            approval_required=True
+        )
+        session.add(act)
+        session.commit()
+        session.refresh(act)
+        action_id = act.id
+
+    # Test reject endpoint
+    resp = client.post(
+        f"/api/automation/actions/{action_id}/reject",
+        json={"approved": False, "reason": "Unsafe time for rollback", "approved_by": "Senior SRE"}
     )
-    disabled = evaluate_automation_policy(make_context(), automation_enabled=False)
-
-    assert not unknown["allowed"]
-    assert not disabled["allowed"]
-
-
-def test_automatic_action_requires_an_explicit_retry_recommendation():
-    assert select_automatic_action("Retry the failed health-check job once") == "retry"
-    assert select_automatic_action("Do not retry this deployment") == "no_action"
-    assert select_automatic_action("Avoid rerun because the migration is unsafe") == "no_action"
-    assert select_automatic_action("Increase the database pool size") == "no_action"
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "rejected"
+    assert data["action"]["status"] == "rejected"
+    assert data["action"]["approval_decision"] == "rejected"
 
 
-def test_production_rollback_requires_human_approval():
-    context = make_context(action="rollback", environment="production", allow_rollback=True)
+def test_simulation_scenarios():
+    # Scenario A: Transient CI failure
+    resp_a = client.post("/api/automation/simulate", json={"scenario": "transient_ci_failure", "dry_run": True})
+    assert resp_a.status_code == 200
+    data_a = resp_a.json()
+    assert data_a["recommendation"] == "retry"
+    assert data_a["risk_level"] == "low"
 
-    pending = evaluate_automation_policy(context, automation_enabled=True)
-    approved = evaluate_automation_policy(
-        context, automation_enabled=True, approved_by_human=True
+    # Scenario B: Memory leak
+    resp_b = client.post("/api/automation/simulate", json={"scenario": "memory_leak_service", "dry_run": True})
+    assert resp_b.status_code == 200
+    data_b = resp_b.json()
+    assert data_b["recommendation"] == "restart"
+
+    # Scenario C: Bad schema migration rollback
+    resp_c = client.post("/api/automation/simulate", json={"scenario": "bad_schema_rollback", "dry_run": True})
+    assert resp_c.status_code == 200
+    data_c = resp_c.json()
+    assert data_c["recommendation"] == "rollback"
+    assert data_c["risk_level"] == "high"
+
+    # Scenario D: Ambiguous root cause (No action)
+    resp_d = client.post("/api/automation/simulate", json={"scenario": "unclear_no_action", "dry_run": True})
+    assert resp_d.status_code == 200
+    data_d = resp_d.json()
+    assert data_d["recommendation"] == "no_action"
+
+
+def test_automation_feedback_and_dashboard():
+    import uuid
+    uid = uuid.uuid4().hex[:8]
+    with Session(engine) as session:
+        act = AutomationAction(
+            action_code=f"ACT-FEEDBACK-{uid}",
+            org_id=1,
+            action_type="restart",
+            provider="github",
+            target="api-service",
+            environment="production",
+            status="succeeded"
+        )
+        session.add(act)
+        session.commit()
+        session.refresh(act)
+        action_id = act.id
+
+    # Post human feedback
+    resp = client.post(
+        f"/api/automation/actions/{action_id}/feedback",
+        json={"feedback": "appropriate", "notes": "Restart promptly stabilized memory usage."}
     )
+    assert resp.status_code == 200
+    assert resp.json()["action"]["human_feedback"] == "appropriate"
 
-    assert not pending["allowed"]
-    assert pending["requires_approval"]
-    assert approved["allowed"]
-
-
-def test_low_medium_retry_can_run_in_production_without_approval():
-    production = evaluate_automation_policy(
-        make_context(environment="production"), automation_enabled=True
-    )
-
-    assert production["allowed"]
-    assert not production["requires_approval"]
-
-
-def test_retry_is_rejected_for_high_severity_or_after_one_attempt():
-    high_severity = evaluate_automation_policy(
-        make_context(severity="high"), automation_enabled=True
-    )
-    repeated = evaluate_automation_policy(
-        make_context(previous_attempts=1), automation_enabled=True
-    )
-    allowed_second_attempt = evaluate_automation_policy(
-        make_context(previous_attempts=1, max_attempts=2), automation_enabled=True
-    )
-
-    assert not high_severity["allowed"]
-    assert not repeated["allowed"]
-    assert allowed_second_attempt["allowed"]
-
-
-def test_failed_health_check_compensates_and_escalates():
-    class Executor:
-        compensated = False
-
-        def execute(self, context):
-            return {"operation_id": "op-1"}
-
-        def health_check(self, context, execution_data=None):
-            return False
-
-        def compensate(self, context, execution_data):
-            self.compensated = execution_data == {"operation_id": "op-1"}
-            return self.compensated
-
-    executor = Executor()
-    result = execute_automation(
-        make_context(), executor=executor, automation_enabled=True
-    )
-
-    assert result["status"] == "escalated"
-    assert result["health_check_passed"] is False
-    assert result["compensated"] is True
-
-
-def test_success_requires_health_check():
-    class Executor:
-        def execute(self, context):
-            return None
-
-        def health_check(self, context, execution_data=None):
-            return True
-
-        def compensate(self, context, execution_data):
-            return False
-
-    result = execute_automation(
-        make_context(), executor=Executor(), automation_enabled=True
-    )
-
-    assert result["status"] == "succeeded"
-    assert result["health_check_passed"] is True
-
-
-@pytest.mark.parametrize(
-    ("provider", "repository", "api_base_url", "pipeline_id", "expected_retry_path", "retry_response"),
-    [
-        ("github", "acme/checkout", None, "123", "/actions/runs/123/rerun-failed-jobs", b""),
-        ("gitlab", "acme/checkout", "https://gitlab.com/api/v4", "123", "/projects/acme%2Fcheckout/pipelines/123/retry", b'{"id":456}'),
-    ],
-)
-def test_ci_retry_executor_retries_exact_run_and_checks_health(
-    provider, repository, api_base_url, pipeline_id, expected_retry_path, retry_response
-):
-    requested = []
-
-    def handler(request):
-        requested.append(request)
-        if request.method == "GET" and request.url.path.endswith("/jobs"):
-            if provider == "github":
-                return httpx.Response(200, json={"jobs": [{"name": "unit tests", "status": "completed", "conclusion": "failure"}]})
-            return httpx.Response(200, json=[{"name": "unit tests", "stage": "test", "status": "failed"}])
-        if request.method == "POST" and (
-            request.url.path.endswith("/retry")
-            or request.url.path.endswith("/rerun-failed-jobs")
-        ):
-            return httpx.Response(201, content=retry_response)
-        if request.method == "GET" and request.url.host in {"health.example.com", "metrics.example.com"}:
-            return httpx.Response(200)
-        if request.method == "GET":
-            if request.url.host == "gitlab.com":
-                return httpx.Response(200, json={"status": "success", "id": 456})
-            return httpx.Response(200, json={"status": "completed", "conclusion": "success", "id": 456})
-        return httpx.Response(202)
-
-    context = make_context(
-        provider=provider,
-        repository=repository,
-        pipeline_id=pipeline_id,
-        api_base_url=api_base_url,
-        health_check_url=json.dumps([
-            "https://health.example.com/ready",
-            "https://metrics.example.com/health",
-        ]),
-        credential="real-test-token",
-        health_check_count=2,
-        health_check_interval_seconds=0,
-    )
-    executor = CiRetryExecutor(
-        transport=httpx.MockTransport(handler),
-        poll_interval=0,
-        max_polls=1,
-    )
-    result = execute_automation(context, executor=executor, automation_enabled=True)
-
-    assert result["status"] == "succeeded"
-    assert any(
-        request.method == "POST" and request.url.raw_path.decode().endswith(expected_retry_path)
-        for request in requested
-    )
-    assert any(request.url.host == "health.example.com" for request in requested)
-    assert any(request.url.host == "metrics.example.com" for request in requested)
-
-
-def test_ci_retry_executor_blocks_failed_deployment_job_before_retry():
-    requested = []
-
-    def handler(request):
-        requested.append(request)
-        if request.url.path.endswith("/jobs"):
-            return httpx.Response(200, json={"jobs": [{"name": "deploy production", "status": "completed", "conclusion": "failure"}]})
-        return httpx.Response(201)
-
-    context = make_context(
-        provider="github",
-        repository="acme/checkout",
-        pipeline_id="123",
-        health_check_url="https://health.example.com/ready",
-        credential="real-test-token",
-    )
-    executor = CiRetryExecutor(transport=httpx.MockTransport(handler), max_polls=1)
-    result = execute_automation(context, executor=executor, automation_enabled=True)
-
-    assert result["status"] == "escalated"
-    assert not any(request.method == "POST" for request in requested)
-
-
-def test_failed_service_probe_compensates_after_successful_ci_retry():
-    def handler(request):
-        if request.method == "GET" and request.url.path.endswith("/jobs"):
-            return httpx.Response(200, json={"jobs": [{"name": "unit tests", "conclusion": "failure"}]})
-        if request.method == "POST" and request.url.path.endswith("/rerun-failed-jobs"):
-            return httpx.Response(201)
-        if request.method == "GET" and request.url.host == "api.github.com":
-            return httpx.Response(200, json={"status": "completed", "conclusion": "success"})
-        if request.method == "GET" and request.url.host == "health.example.com":
-            return httpx.Response(200)
-        if request.method == "GET" and request.url.host == "metrics.example.com":
-            return httpx.Response(503)
-        if request.method == "POST" and request.url.path.endswith("/cancel"):
-            return httpx.Response(202)
-        return httpx.Response(404)
-
-    context = make_context(
-        provider="github",
-        repository="acme/checkout",
-        pipeline_id="123",
-        health_check_url=json.dumps([
-            "https://health.example.com/ready",
-            "https://metrics.example.com/health",
-        ]),
-        credential="real-test-token",
-        health_check_count=1,
-        health_check_interval_seconds=0,
-    )
-    executor = CiRetryExecutor(transport=httpx.MockTransport(handler), max_polls=1)
-    result = execute_automation(context, executor=executor, automation_enabled=True)
-
-    assert result["status"] == "escalated"
-    assert result["health_check_passed"] is False
-    assert result["compensated"] is True
+    # Check dashboard aggregates
+    dash_resp = client.get("/api/automation/dashboard")
+    assert dash_resp.status_code == 200
+    dash_data = dash_resp.json()
+    assert "metrics" in dash_data
+    assert "recent_actions" in dash_data
+    assert "policy" in dash_data

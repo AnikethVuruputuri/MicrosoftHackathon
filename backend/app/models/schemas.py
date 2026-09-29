@@ -465,6 +465,83 @@ class FailurePattern(SQLModel, table=True):
     last_seen_at: datetime = Field(default_factory=utc_now)
 
 
+class AutomationPolicy(SQLModel, table=True):
+    __tablename__ = "automation_policies"
+    __table_args__ = {"extend_existing": True}
+    id: Optional[int] = Field(default=None, primary_key=True)
+    org_id: int = Field(default=1, unique=True, index=True)
+    enabled: bool = False  # Global safety feature flag, default OFF
+    mode: str = "approval_required"  # "approval_required", "autonomous", "dry_run"
+    dry_run: bool = False
+    allow_retry: bool = True
+    max_retries: int = 2
+    retry_cooldown_seconds: int = 300
+    allow_restart: bool = True
+    max_restarts: int = 1
+    restart_cooldown_seconds: int = 600
+    allow_rollback: bool = True
+    rollback_approval_required: bool = True
+    rollback_cooldown_seconds: int = 1800
+    health_timeout_seconds: int = 120
+    verification_interval_seconds: int = 10
+    max_attempts_per_incident: int = 2
+    allowed_environments: str = "staging,development,production"
+    escalation_channel: str = "slack"
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class AutomationAction(SQLModel, table=True):
+    __tablename__ = "automation_actions"
+    __table_args__ = {"extend_existing": True}
+    id: Optional[int] = Field(default=None, primary_key=True)
+    action_code: str = Field(unique=True, index=True)  # e.g. ACT-2026-0001
+    org_id: int = Field(default=1, index=True)
+    incident_id: Optional[int] = Field(default=None, foreign_key="incidents.id", index=True)
+    deployment_id: Optional[int] = Field(default=None, index=True)
+    action_type: str = Field(index=True)  # retry, restart, rollback, no_action
+    provider: str = "github"  # github, gitlab, local
+    repository: str = ""
+    environment: str = "production"
+    target: str = ""  # run_id, service_name, commit_sha
+    reason: str = ""
+    risk_level: str = "low"  # low, controlled, high, very_high
+    policy_result: str = "approval_required"  # approved, blocked, approval_required, no_action
+    policy_reason: str = ""
+    approval_required: bool = True
+    approved_by: Optional[str] = None
+    approval_decision: Optional[str] = None  # approved, rejected, pending
+    approval_reason: Optional[str] = None
+    approval_timestamp: Optional[datetime] = None
+    status: str = "pending"  # pending, awaiting_approval, running, succeeded, failed, rolled_back, rejected, blocked
+    execution_details: Optional[str] = None  # JSON or text
+    verification_status: str = "not_started"  # not_started, verifying, healthy, degraded, failed
+    verification_details: Optional[str] = None  # JSON or text
+    recovery_time_seconds: Optional[int] = None
+    compensation_action: Optional[str] = None
+    compensation_status: Optional[str] = None  # not_needed, executed, failed
+    is_dry_run: bool = False
+    human_feedback: Optional[str] = None  # appropriate, inappropriate, neutral
+    human_feedback_notes: Optional[str] = None
+    retained_to_hindsight: bool = False
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class AutomationEffectiveness(SQLModel, table=True):
+    __tablename__ = "automation_effectiveness"
+    __table_args__ = {"extend_existing": True}
+    id: Optional[int] = Field(default=None, primary_key=True)
+    org_id: int = Field(default=1, index=True)
+    failure_fingerprint: str = Field(index=True)
+    action_type: str = Field(index=True)
+    attempts: int = 0
+    successes: int = 0
+    failures: int = 0
+    avg_recovery_time_seconds: float = 0.0
+    last_recovery_at: Optional[datetime] = None
+
+
 # ----------------- Pydantic DTO Schemas -----------------
 
 class UserLoginRequest(BaseModel):
@@ -549,3 +626,33 @@ class SystemStatusResponse(BaseModel):
     gitlab_status: str = "Connected"
     gitlab_mode: str = "REAL" # REAL or DEMO
     background_worker: str = "Operational"
+    automation_status: str = "Operational"
+    automation_enabled: bool = False
+
+class AutomationActionApprovalRequest(BaseModel):
+    approved: bool
+    reason: Optional[str] = None
+    approved_by: str = "SRE On-Call"
+
+class AutomationFeedbackRequest(BaseModel):
+    feedback: str # "appropriate", "inappropriate", "neutral"
+    notes: Optional[str] = None
+
+class AutomationPolicyUpdateRequest(BaseModel):
+    enabled: Optional[bool] = None
+    mode: Optional[str] = None
+    dry_run: Optional[bool] = None
+    allow_retry: Optional[bool] = None
+    max_retries: Optional[int] = None
+    allow_restart: Optional[bool] = None
+    max_restarts: Optional[int] = None
+    allow_rollback: Optional[bool] = None
+    rollback_approval_required: Optional[bool] = None
+    allowed_environments: Optional[str] = None
+    escalation_channel: Optional[str] = None
+
+class AutomationSimulateRequest(BaseModel):
+    scenario: str # "transient_ci_failure", "memory_leak_service", "bad_schema_rollback", "unclear_no_action"
+    dry_run: bool = False
+    service_name: Optional[str] = None
+

@@ -8,6 +8,7 @@ import {
   Rocket,
   AlertTriangle,
   Brain,
+  ShieldCheck,
   Plug,
   Settings,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ const MAIN_NAV = [
   { label: 'Pipelines', path: '/pipelines', icon: Workflow },
   { label: 'Deployments', path: '/deployments', icon: Rocket },
   { label: 'Incidents', path: '/incidents', icon: AlertTriangle },
+  { label: 'Automation', path: '/automation', icon: ShieldCheck },
   { label: 'Memory', path: '/memory', icon: Brain },
 ];
 

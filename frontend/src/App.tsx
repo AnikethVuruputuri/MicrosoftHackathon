@@ -12,6 +12,7 @@ import { AuditLogs } from './pages/AuditLogs';
 import { RepositoriesPage } from './pages/Repositories';
 import { PipelinesPage } from './pages/Pipelines';
 import { SettingsPage } from './pages/Settings';
+import { Automation } from './pages/Automation';
 
 export function App() {
   return (
@@ -25,6 +26,7 @@ export function App() {
         <Route path="/deployments/simulate" element={<SimulateDeployment />} />
         <Route path="/incidents" element={<Incidents />} />
         <Route path="/incidents/:id" element={<IncidentDetail />} />
+        <Route path="/automation" element={<Automation />} />
         <Route path="/memory" element={<MemoryExplorer />} />
         <Route path="/memory/patterns" element={<FailurePatterns />} />
         <Route path="/integrations" element={<Integrations />} />

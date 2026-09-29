@@ -6,13 +6,18 @@ import {
   AgentDiagnosis, 
   HumanCorrection, 
   MemoryReference, 
-  ResolutionEffectiveness 
+  ResolutionEffectiveness,
+  AutomationAction 
 } from '../types';
 import { 
   fetchIncidentDetail, 
   runInvestigation, 
   submitHumanCorrection, 
-  applyResolution 
+  applyResolution,
+  fetchAutomationActions,
+  approveAutomationAction,
+  rejectAutomationAction,
+  submitAutomationFeedback
 } from '../services/api';
 import { StageTracker } from '../components/StageTracker';
 import { LearningTimeline } from '../components/LearningTimeline';
@@ -28,7 +33,11 @@ import {
   ArrowLeft,
   Check,
   Terminal,
-  Activity
+  Activity,
+  ShieldCheck,
+  ThumbsUp,
+  ThumbsDown,
+  RotateCcw
 } from 'lucide-react';
 
 export const IncidentDetail: React.FC = () => {
@@ -49,6 +58,8 @@ export const IncidentDetail: React.FC = () => {
   const [investigating, setInvestigating] = useState<boolean>(false);
   const [stageLogs, setStageLogs] = useState<StageLog[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [automationActions, setAutomationActions] = useState<AutomationAction[]>([]);
+  const [actionProcessing, setActionProcessing] = useState<boolean>(false);
 
   // Correction Form State
   const [showCorrectionForm, setShowCorrectionForm] = useState<boolean>(false);
@@ -71,6 +82,8 @@ export const IncidentDetail: React.FC = () => {
       setLoading(true);
       const res = await fetchIncidentDetail(incidentId);
       setData(res);
+      const actions = await fetchAutomationActions({ incident_id: incidentId });
+      setAutomationActions(actions);
       setError(null);
     } catch (err: any) {
       setError(err.message || 'Failed to load incident details');
@@ -129,6 +142,41 @@ export const IncidentDetail: React.FC = () => {
       setInvestigating(false);
     }
   };
+
+  const handleApproveAction = async (actionId: number) => {
+    try {
+      setActionProcessing(true);
+      await approveAutomationAction(actionId, engineerName, 'Approved from Incident Console');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to approve automation action');
+    } finally {
+      setActionProcessing(false);
+    }
+  };
+
+  const handleRejectAction = async (actionId: number) => {
+    try {
+      setActionProcessing(true);
+      await rejectAutomationAction(actionId, engineerName, 'Rejected from Incident Console');
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to reject automation action');
+    } finally {
+      setActionProcessing(false);
+    }
+  };
+
+  const handleFeedbackAction = async (actionId: number, feedback: 'appropriate' | 'inappropriate') => {
+    try {
+      await submitAutomationFeedback(actionId, feedback, 'Feedback from Incident Detail');
+      setRetainedSuccessMsg(`Recorded '${feedback}' feedback in Hindsight memory.`);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to submit feedback');
+    }
+  };
+
 
   if (loading && !data) {
     return (
@@ -346,6 +394,107 @@ export const IncidentDetail: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* SAFE AUTOMATION & RECOVERY SECTION */}
+          {automationActions.length > 0 && (
+            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Safe Self-Recovery & Policy Engine
+                  </h3>
+                </div>
+                <button
+                  onClick={() => navigate('/automation')}
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  Automation Console &rarr;
+                </button>
+              </div>
+
+              {automationActions.map((act) => (
+                <div key={act.id} className="p-3.5 bg-gray-50 border border-gray-200 rounded-md space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-gray-800">{act.action_code}</span>
+                      <span className="uppercase text-[11px] font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                        {act.action_type}
+                      </span>
+                      <span className="text-xs text-gray-500">Tier: <strong>{act.risk_level.toUpperCase()}</strong></span>
+                    </div>
+                    <StatusBadge
+                      status={
+                        act.status === 'succeeded' ? 'success' :
+                        act.status === 'awaiting_approval' ? 'warning' :
+                        act.status === 'running' ? 'running' : 'failure'
+                      }
+                      label={act.status.replace('_', ' ')}
+                    />
+                  </div>
+
+                  <p className="text-xs text-gray-700">
+                    <strong>Reason:</strong> {act.reason}
+                  </p>
+
+                  <div className="text-xs text-gray-600 bg-white p-2 rounded border border-gray-200">
+                    <strong>Policy Verification:</strong> {act.policy_reason || act.policy_result}
+                  </div>
+
+                  {act.status === 'awaiting_approval' && (
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
+                      <button
+                        disabled={actionProcessing}
+                        onClick={() => handleRejectAction(act.id)}
+                        className="px-3 py-1 text-xs font-medium text-rose-700 bg-white border border-rose-200 rounded hover:bg-rose-50"
+                      >
+                        Reject
+                      </button>
+                      <button
+                        disabled={actionProcessing}
+                        onClick={() => handleApproveAction(act.id)}
+                        className="px-3 py-1 text-xs font-medium text-white bg-emerald-600 rounded hover:bg-emerald-700 flex items-center gap-1"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        Approve & Execute
+                      </button>
+                    </div>
+                  )}
+
+                  {act.status === 'succeeded' && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 text-xs">
+                      <div className="flex items-center gap-2 text-emerald-700">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Recovered in {act.recovery_time_seconds || 24}s (Health verified)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 text-[11px]">Was appropriate?</span>
+                        {act.human_feedback ? (
+                          <span className="font-semibold text-emerald-700 capitalize">{act.human_feedback}</span>
+                        ) : (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleFeedbackAction(act.id, 'appropriate')}
+                              className="p-1 hover:bg-emerald-50 rounded text-gray-400 hover:text-emerald-600"
+                            >
+                              <ThumbsUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleFeedbackAction(act.id, 'inappropriate')}
+                              className="p-1 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600"
+                            >
+                              <ThumbsDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
 
           {/* HUMAN CORRECTION FORM (Interactive Learning Trigger) */}
           {showCorrectionForm && (

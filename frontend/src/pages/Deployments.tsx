@@ -148,6 +148,28 @@ export const Deployments: React.FC = () => {
           {formatRelativeTime(dep.started_at)}
         </span>
       ),
+    },
+    {
+      key: 'recovery',
+      label: 'Recovery Guard',
+      render: (dep: Deployment) => (
+        <div>
+          {dep.status === 'failed' ? (
+            <button
+              onClick={() => navigate('/automation')}
+              className="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded transition-colors"
+            >
+              Trigger Recovery
+            </button>
+          ) : dep.status === 'rolled_back' ? (
+            <span className="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+              Rollback Policy
+            </span>
+          ) : (
+            <span className="text-xs text-gray-400">Guarded</span>
+          )}
+        </div>
+      ),
     }
   ];
 
