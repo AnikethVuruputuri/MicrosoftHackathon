@@ -24,7 +24,7 @@ const MAIN_NAV = [
   { label: 'Memory', path: '/memory', icon: Brain },
 ];
 
-const SECONDARY_NAV = [
+const SYSTEM_NAV = [
   { label: 'Integrations', path: '/integrations', icon: Plug },
   { label: 'Settings', path: '/settings', icon: Settings },
 ];
@@ -45,86 +45,119 @@ export function Sidebar({ className, onClose }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'fixed inset-y-0 left-0 w-60 bg-white border-r border-gray-200 flex flex-col z-30 transition-transform duration-200 ease-in-out',
+        'fixed inset-y-0 left-0 w-[232px] bg-white border-r border-[#E4E9F0] flex flex-col z-30 transition-transform duration-200 ease-in-out',
         className
       )}
     >
-      {/* Logo & Mobile Close */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200">
-        <Link to="/overview" className="flex items-center gap-2.5" onClick={onClose}>
-          <img src={devLogo} alt="OpsMemory" className="h-8 w-8 object-contain rounded-md" />
-          <span className="text-base font-semibold text-gray-900 tracking-tight">OpsMemory</span>
+      {/* Brand Header */}
+      <div className="h-14 flex items-center justify-between px-4 border-b border-[#E4E9F0]">
+        <Link to="/overview" className="flex items-center gap-2.5 group" onClick={onClose}>
+          <img
+            src={devLogo}
+            alt="OpsMemory"
+            className="h-7 w-7 object-contain rounded-md shadow-xs group-hover:scale-105 transition-transform"
+          />
+          <div className="flex flex-col">
+            <span className="text-[15px] font-bold text-[#111827] tracking-tight leading-tight">
+              OpsMemory
+            </span>
+            <span className="text-[10px] font-medium text-[#7A8699] tracking-wider uppercase">
+              DevOps Intelligence
+            </span>
+          </div>
         </Link>
         {onClose && (
           <button
             onClick={onClose}
-            className="md:hidden p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
-            aria-label="Close navigation sidebar"
+            className="md:hidden p-1.5 text-[#7A8699] hover:text-[#111827] rounded-md hover:bg-[#F8FAFC] transition-colors"
+            aria-label="Close navigation"
           >
             <X className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {/* Main Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        <div className="mb-2">
-          <span className="px-2 text-[11px] font-medium text-gray-400 uppercase tracking-wider">Main</span>
+      {/* Main Navigation Group */}
+      <div className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
+        <div>
+          <span className="px-2.5 text-[10px] font-bold text-[#7A8699] uppercase tracking-wider block mb-1.5">
+            Main
+          </span>
+          <nav className="space-y-0.5">
+            {MAIN_NAV.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-120',
+                    active
+                      ? 'bg-[#EFF6FF] text-[#2563EB] font-semibold shadow-[0_1px_2px_rgba(37,99,235,0.06)]'
+                      : 'text-[#5B667A] hover:text-[#111827] hover:bg-[#F8FAFC]'
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      'h-[18px] w-[18px] flex-shrink-0 transition-colors',
+                      active ? 'text-[#2563EB]' : 'text-[#7A8699]'
+                    )}
+                  />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
-        {MAIN_NAV.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={onClose}
-              className={cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors',
-                active
-                  ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              )}
-            >
-              <Icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-blue-600' : 'text-gray-400')} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
 
-      {/* Secondary Nav */}
-      <div className="px-3 py-3 border-t border-gray-200 space-y-0.5">
-        <div className="mb-2">
-          <span className="px-2 text-[11px] font-medium text-gray-400 uppercase tracking-wider">System</span>
+        {/* System Navigation Group */}
+        <div>
+          <span className="px-2.5 text-[10px] font-bold text-[#7A8699] uppercase tracking-wider block mb-1.5">
+            System
+          </span>
+          <nav className="space-y-0.5">
+            {SYSTEM_NAV.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className={cn(
+                    'flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-120',
+                    active
+                      ? 'bg-[#EFF6FF] text-[#2563EB] font-semibold shadow-[0_1px_2px_rgba(37,99,235,0.06)]'
+                      : 'text-[#5B667A] hover:text-[#111827] hover:bg-[#F8FAFC]'
+                  )}
+                >
+                  <Icon
+                    className={cn(
+                      'h-[18px] w-[18px] flex-shrink-0 transition-colors',
+                      active ? 'text-[#2563EB]' : 'text-[#7A8699]'
+                    )}
+                  />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
-        {SECONDARY_NAV.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={onClose}
-              className={cn(
-                'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-colors',
-                active
-                  ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              )}
-            >
-              <Icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-blue-600' : 'text-gray-400')} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
       </div>
 
-      {/* Status */}
-      <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 ring-2 ring-emerald-100 animate-pulse" />
-          <span className="font-medium text-gray-700">System Healthy</span>
+      {/* System Status Footer */}
+      <div className="p-3 border-t border-[#E4E9F0] bg-[#FAFBFC]">
+        <div className="flex items-center justify-between text-xs text-[#5B667A] px-1">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16A36A] opacity-60"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#16A36A]"></span>
+            </span>
+            <span className="font-medium text-[#111827]">Engine Online</span>
+          </div>
+          <span className="font-mono text-[10px] text-[#7A8699]">v2.4-prod</span>
         </div>
       </div>
     </aside>

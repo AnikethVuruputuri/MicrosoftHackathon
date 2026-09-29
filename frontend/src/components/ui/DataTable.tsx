@@ -18,6 +18,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: React.ReactNode;
   className?: string;
   compact?: boolean;
 }
@@ -27,8 +28,9 @@ export function DataTable<T>({
   data,
   keyExtractor,
   onRowClick,
-  emptyTitle = 'No data',
+  emptyTitle = 'No records found',
   emptyDescription,
+  emptyAction,
   className,
   compact = false,
 }: DataTableProps<T>) {
@@ -46,64 +48,75 @@ export function DataTable<T>({
 
   if (data.length === 0) {
     return (
-      <div className={cn('border border-gray-200 rounded-lg', className)}>
-        <EmptyState title={emptyTitle} description={emptyDescription} />
+      <div className={cn('bg-white border border-[#E4E9F0] rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)]', className)}>
+        <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
       </div>
     );
   }
 
   return (
-    <div className={cn('border border-gray-200 rounded-lg overflow-hidden', className)}>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 border-b border-gray-200">
-            {columns.map((col) => (
-              <th
-                key={col.key}
-                className={cn(
-                  'text-left font-medium text-gray-500 whitespace-nowrap',
-                  compact ? 'px-3 py-2 text-xs' : 'px-4 py-3',
-                  col.sortable && 'cursor-pointer select-none hover:text-gray-700',
-                  col.className
-                )}
-                onClick={() => col.sortable && handleSort(col.key)}
-              >
-                <span className="flex items-center gap-1">
-                  {col.label}
-                  {col.sortable && sortKey === col.key && (
-                    sortDir === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
-                  )}
-                </span>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {data.map((row, index) => (
-            <tr
-              key={keyExtractor(row)}
-              className={cn(
-                'bg-white transition-colors',
-                onRowClick && 'cursor-pointer hover:bg-gray-50'
-              )}
-              onClick={() => onRowClick?.(row)}
-            >
+    <div
+      className={cn(
+        'bg-white border border-[#E4E9F0] rounded-xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden',
+        className
+      )}
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-[#F8FAFC] border-b border-[#E4E9F0]">
               {columns.map((col) => (
-                <td
+                <th
                   key={col.key}
                   className={cn(
-                    'text-gray-700',
-                    compact ? 'px-3 py-2' : 'px-4 py-3',
+                    'text-[11px] font-semibold text-[#5B667A] uppercase tracking-wider select-none whitespace-nowrap',
+                    compact ? 'px-3 py-2.5' : 'px-4 py-3',
+                    col.sortable && 'cursor-pointer hover:text-[#111827] transition-colors',
                     col.className
                   )}
+                  onClick={() => col.sortable && handleSort(col.key)}
                 >
-                  {col.render(row, index)}
-                </td>
+                  <span className="flex items-center gap-1.5">
+                    {col.label}
+                    {col.sortable && sortKey === col.key && (
+                      sortDir === 'asc' ? (
+                        <ChevronUp className="h-3 w-3 text-[#2563EB]" />
+                      ) : (
+                        <ChevronDown className="h-3 w-3 text-[#2563EB]" />
+                      )
+                    )}
+                  </span>
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-[#E4E9F0]">
+            {data.map((row, index) => (
+              <tr
+                key={keyExtractor(row)}
+                className={cn(
+                  'bg-white transition-colors duration-100',
+                  onRowClick ? 'cursor-pointer hover:bg-[#F8FAFC]' : 'hover:bg-[#FAFBFC]'
+                )}
+                onClick={() => onRowClick?.(row)}
+              >
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={cn(
+                      'text-sm text-[#111827] align-middle',
+                      compact ? 'px-3 py-2' : 'px-4 py-3',
+                      col.className
+                    )}
+                  >
+                    {col.render(row, index)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

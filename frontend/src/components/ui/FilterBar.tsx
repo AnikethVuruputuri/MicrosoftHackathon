@@ -1,3 +1,4 @@
+import React from 'react';
 import { cn } from '../../lib/utils';
 import { Search, X } from 'lucide-react';
 
@@ -29,33 +30,34 @@ export function FilterBar({
   className,
 }: FilterBarProps) {
   return (
-    <div className={cn('flex items-center gap-3 flex-wrap', className)}>
+    <div className={cn('flex items-center gap-2.5 flex-wrap', className)}>
       {onSearchChange && (
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#7A8699]" />
           <input
             type="text"
             value={searchValue || ''}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full pl-9 pr-8 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full h-9 pl-9 pr-8 text-xs sm:text-sm bg-white border border-[#E4E9F0] rounded-lg text-[#111827] placeholder:text-[#7A8699] focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.03)]"
           />
           {searchValue && (
             <button
               onClick={() => onSearchChange('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7A8699] hover:text-[#111827] p-0.5 rounded transition-colors"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
       )}
+
       {filters?.map((filter) => (
         <select
           key={filter.label}
           value={filter.value}
           onChange={(e) => filter.onChange(e.target.value)}
-          className="px-3 py-2 text-sm border border-gray-200 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="h-9 px-3 text-xs sm:text-sm bg-white border border-[#E4E9F0] rounded-lg text-[#111827] font-medium focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 transition-all shadow-[0_1px_2px_rgba(15,23,42,0.03)] cursor-pointer"
         >
           {filter.options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -64,6 +66,7 @@ export function FilterBar({
           ))}
         </select>
       ))}
+
       {actions && <div className="ml-auto flex items-center gap-2">{actions}</div>}
     </div>
   );

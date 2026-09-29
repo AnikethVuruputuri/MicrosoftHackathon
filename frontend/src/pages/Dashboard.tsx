@@ -6,25 +6,26 @@ import { MetricCard } from '../components/ui/MetricCard';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { DashboardSkeleton } from '../components/ui/LoadingSkeleton';
-import { 
-  Layers, 
-  AlertTriangle, 
-  Brain, 
-  UserCheck, 
-  ArrowUpRight, 
+import {
+  Layers,
+  AlertTriangle,
+  Brain,
+  UserCheck,
+  ArrowUpRight,
   GitCommit,
   TrendingUp,
-  ShieldAlert,
   ShieldCheck,
-  Info,
   Clock,
   Zap,
   Sparkles,
   DollarSign,
   CheckCircle2,
-  Shield
+  Info,
+  ShieldAlert,
+  ArrowRight
 } from 'lucide-react';
 import { LiveDemoModal } from '../components/LiveDemoModal';
+import { RiskIndicator } from '../components/RiskIndicator';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -52,8 +53,11 @@ export const Dashboard: React.FC = () => {
 
   if (loading && !data) {
     return (
-      <div className="p-6 max-w-7xl mx-auto space-y-6">
-        <PageHeader title="Overview" description="Operational intelligence and recent system activity." />
+      <div className="space-y-6">
+        <PageHeader
+          title="Overview"
+          description="Operational intelligence, automated recovery health, and recent system activity."
+        />
         <DashboardSkeleton />
       </div>
     );
@@ -61,10 +65,8 @@ export const Dashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="p-6 max-w-7xl mx-auto">
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
-          Failed to load overview data. {error}
-        </div>
+      <div className="p-4 rounded-xl bg-[#FFF1F2] border border-[#FECDD3] text-[#D92D3A] text-sm font-medium">
+        Failed to load overview data. {error}
       </div>
     );
   }
@@ -74,304 +76,321 @@ export const Dashboard: React.FC = () => {
   const currentDep = data.current_deployment;
   const demo = data.demo_before_after;
 
-  const getRiskBadge = (level: string) => {
-    const l = (level || 'low').toLowerCase();
-    if (l === 'critical' || l === 'high') {
-      return { bg: 'bg-red-50 border-red-200 text-red-700', icon: ShieldAlert, label: 'HIGH RISK' };
-    }
-    if (l === 'medium') {
-      return { bg: 'bg-amber-50 border-amber-200 text-amber-700', icon: AlertTriangle, label: 'MEDIUM RISK' };
-    }
-    return { bg: 'bg-emerald-50 border-emerald-200 text-emerald-700', icon: ShieldCheck, label: 'LOW RISK' };
-  };
-
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <PageHeader 
-        title="Overview" 
-        description="Operational intelligence and recent system activity." 
+    <div className="space-y-6">
+      {/* Page Title & Top Actions */}
+      <PageHeader
+        title="Overview"
+        description="Continuous operational intelligence: AI proposes, deterministic policy engine gates, and verified human corrections are retained as organizational memory."
+        actions={
+          <button
+            onClick={() => setIsDemoModalOpen(true)}
+            className="btn-primary"
+            title="Launch interactive walkthrough and benchmarks"
+          >
+            <Sparkles className="w-4 h-4 text-blue-100" />
+            <span>Live Evaluation Arena</span>
+          </button>
+        }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Primary KPI Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           label="Total Deployments"
           value={data.learning_metrics.total_deployments}
-          icon={<Layers className="w-5 h-5 text-gray-400" />}
+          icon={<Layers className="w-5 h-5 text-[#7A8699]" />}
+          subtitle="Monitored across fleet"
         />
         <MetricCard
           label="Recorded Incidents"
           value={data.learning_metrics.total_incidents}
-          icon={<AlertTriangle className="w-5 h-5 text-amber-500" />}
+          icon={<AlertTriangle className="w-5 h-5 text-[#D99100]" />}
+          subtitle="Auto-classified & fingerprinted"
         />
         <MetricCard
           label="Human Corrections"
           value={data.learning_metrics.human_corrections}
-          icon={<UserCheck className="w-5 h-5 text-blue-500" />}
+          icon={<UserCheck className="w-5 h-5 text-[#2563EB]" />}
+          subtitle="Engineer resolutions ingested"
         />
         <MetricCard
           label="Hindsight Memories"
           value={data.learning_metrics.hindsight_memories_retained}
-          icon={<Brain className="w-5 h-5 text-emerald-500" />}
+          icon={<Brain className="w-5 h-5 text-[#6D5CE7]" />}
+          subtitle="Persistent org knowledge"
         />
       </div>
 
-      {/* Executive ROI & MTTR Impact Summary Card */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 rounded-2xl p-6 text-white shadow-xl border border-indigo-900/60 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-indigo-800/40 relative z-10">
+      {/* Premium Light Enterprise Intelligence Hero Panel */}
+      <div className="bg-gradient-to-br from-[#EFF6FF] via-[#F8FAFC] to-[#F3F0FF] rounded-2xl p-6 border border-[#BFDBFE] shadow-[0_1px_3px_rgba(37,99,235,0.06)] relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[#E4E9F0]">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30 px-2 py-0.5 rounded-full">
-                Hackathon Executive Impact
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span className="text-[11px] font-bold uppercase tracking-wider bg-[#2563EB]/10 text-[#2563EB] border border-[#2563EB]/20 px-2.5 py-0.5 rounded-full">
+                Operational Intelligence
               </span>
-              <span className="text-xs text-indigo-300">Continuous Organizational Learning Loop</span>
+              <span className="text-xs font-medium text-[#5B667A]">
+                Autonomous Recovery & Closed-Loop Learning
+              </span>
             </div>
-            <h3 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
-              Autonomous Recovery & Mean Time to Resolution (MTTR)
-            </h3>
+            <h2 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
+              Autonomous Recovery & Organizational Learning
+            </h2>
+            <p className="text-xs sm:text-sm text-[#5B667A] mt-1 max-w-3xl leading-relaxed">
+              When an outage occurs, OpsMemory recalls verified engineer corrections from Hindsight memory, evaluates blast radius through a deterministic policy gate, and executes recovery in seconds.
+            </p>
           </div>
-          
-          <button
-            onClick={() => setIsDemoModalOpen(true)}
-            className="self-start md:self-auto px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/25 flex items-center gap-2 transition-all cursor-pointer hover:scale-[1.02]"
-          >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Launch Interactive 2-Min Demo</span>
-          </button>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => navigate('/automation')}
+              className="btn-secondary text-xs"
+            >
+              Policy Rules
+            </button>
+            <button
+              onClick={() => setIsDemoModalOpen(true)}
+              className="btn-primary text-xs"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>Interactive Benchmarks</span>
+            </button>
+          </div>
         </div>
 
-        {/* 4 Impact Pillars */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-5 relative z-10">
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <span className="text-xs text-indigo-200 block mb-1">Mean Time to Resolution</span>
+        {/* 4 Unified Executive KPI Blocks */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-5">
+          <div className="bg-white border border-[#E4E9F0] rounded-xl p-4 shadow-xs">
+            <span className="text-xs font-semibold text-[#5B667A] block mb-1">Mean Time to Resolution</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-emerald-400">24 secs</span>
-              <span className="text-xs text-gray-400 line-through">42 mins</span>
+              <span className="text-2xl font-bold text-[#16A36A] tabular-nums">24 secs</span>
+              <span className="text-xs text-[#7A8699] line-through tabular-nums">42 mins</span>
             </div>
-            <div className="mt-2 text-[11px] text-emerald-300 flex items-center gap-1 font-semibold">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+            <div className="mt-2 text-[11px] text-[#16A36A] flex items-center gap-1 font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
               <span>99% MTTR reduction on repeats</span>
             </div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <span className="text-xs text-indigo-200 block mb-1">Safe Auto-Remediation</span>
+          <div className="bg-white border border-[#E4E9F0] rounded-xl p-4 shadow-xs">
+            <span className="text-xs font-semibold text-[#5B667A] block mb-1">Safe Auto-Remediation</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-blue-400">82%</span>
-              <span className="text-xs text-indigo-200">of incidents</span>
+              <span className="text-2xl font-bold text-[#2563EB] tabular-nums">82%</span>
+              <span className="text-xs text-[#5B667A]">of repeat incidents</span>
             </div>
-            <div className="mt-2 text-[11px] text-blue-300 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="mt-2 text-[11px] text-[#2563EB] flex items-center gap-1 font-semibold">
+              <ShieldCheck className="w-3.5 h-3.5 flex-shrink-0" />
               <span>Deterministic policy-gated</span>
             </div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <span className="text-xs text-indigo-200 block mb-1">SRE Firefighting Saved</span>
+          <div className="bg-white border border-[#E4E9F0] rounded-xl p-4 shadow-xs">
+            <span className="text-xs font-semibold text-[#5B667A] block mb-1">SRE Firefighting Saved</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-amber-300">148 hrs</span>
-              <span className="text-xs text-indigo-200">/ month</span>
+              <span className="text-2xl font-bold text-[#D99100] tabular-nums">148 hrs</span>
+              <span className="text-xs text-[#5B667A]">/ month</span>
             </div>
-            <div className="mt-2 text-[11px] text-amber-300 flex items-center gap-1">
-              <UserCheck className="w-3.5 h-3.5" />
-              <span>Zero 2 AM alerts on repeats</span>
+            <div className="mt-2 text-[11px] text-[#D99100] flex items-center gap-1 font-semibold">
+              <UserCheck className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Zero 2 AM alerts on known repeats</span>
             </div>
           </div>
 
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <span className="text-xs text-indigo-200 block mb-1">Estimated Cost Saved</span>
+          <div className="bg-white border border-[#E4E9F0] rounded-xl p-4 shadow-xs">
+            <span className="text-xs font-semibold text-[#5B667A] block mb-1">Estimated Cost Saved</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-purple-300">$124,000+</span>
+              <span className="text-2xl font-bold text-[#6D5CE7] tabular-nums">$124,000+</span>
             </div>
-            <div className="mt-2 text-[11px] text-purple-200 flex items-center gap-1">
-              <DollarSign className="w-3.5 h-3.5" />
-              <span>Based on tier-1 downtime cost</span>
+            <div className="mt-2 text-[11px] text-[#6D5CE7] flex items-center gap-1 font-semibold">
+              <DollarSign className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Tier-1 downtime avoidance</span>
             </div>
           </div>
         </div>
 
-        {/* Quick Comparison Bar */}
-        <div className="mt-5 pt-4 border-t border-indigo-800/30 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-indigo-200/90 relative z-10">
-          <div className="flex items-start gap-2 bg-red-950/40 border border-red-800/30 rounded-lg p-2.5">
-            <span className="text-rose-400 font-bold uppercase text-[10px] bg-rose-950 px-1.5 py-0.5 rounded border border-rose-800/50">Without Memory</span>
-            <span className="text-gray-300">Every outage starts from zero. Engineers rediscover the same DB pools and flaky pipelines over and over.</span>
+        {/* Side-by-Side Comparison: Without Memory vs With OpsMemory */}
+        <div className="mt-5 pt-4 border-t border-[#E4E9F0] grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+          <div className="flex items-start gap-2.5 bg-white/90 border border-[#FECDD3] rounded-lg p-3">
+            <span className="text-[#D92D3A] font-bold uppercase text-[10px] bg-[#FFF1F2] border border-[#FECDD3] px-2 py-0.5 rounded flex-shrink-0">
+              Without Memory
+            </span>
+            <span className="text-[#5B667A] leading-relaxed">
+              Every outage starts from zero. Engineers rediscover the same DB connection limits and flaky configurations repeatedly.
+            </span>
           </div>
-          <div className="flex items-start gap-2 bg-emerald-950/40 border border-emerald-800/30 rounded-lg p-2.5">
-            <span className="text-emerald-400 font-bold uppercase text-[10px] bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-800/50">With OpsMemory</span>
-            <span className="text-gray-200">System learns engineer corrections permanently in Hindsight. Subsequent failures trigger instant safe recovery.</span>
+          <div className="flex items-start gap-2.5 bg-white/90 border border-[#A6F4C5] rounded-lg p-3">
+            <span className="text-[#16A36A] font-bold uppercase text-[10px] bg-[#ECFDF3] border border-[#A6F4C5] px-2 py-0.5 rounded flex-shrink-0">
+              With OpsMemory
+            </span>
+            <span className="text-[#111827] font-medium leading-relaxed">
+              OpsMemory retains engineer corrections in Hindsight. Subsequent failure signatures trigger instant, policy-verified recovery.
+            </span>
           </div>
         </div>
       </div>
 
+      {/* Main Grid: Current Deployment & Learning Progression vs Side Incidents */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          
+          {/* Current Deployment Overview */}
           {currentDep && (
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                  <h3 className="text-sm font-semibold text-gray-900">Current Deployment Overview</h3>
+            <div className="card-enterprise p-5">
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#E4E9F0]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#2563EB] animate-pulse" />
+                  <h3 className="text-sm font-bold text-[#111827]">Current Deployment Overview</h3>
                 </div>
-                <span className="text-xs font-mono text-gray-600 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                <span className="text-xs font-mono font-medium text-[#5B667A] bg-[#F8FAFC] px-2 py-1 rounded-md border border-[#E4E9F0]">
                   Release #{currentDep.deployment_number}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
                 <div>
-                  <span className="text-xs text-gray-500 font-medium block mb-1">Service</span>
-                  <span className="text-sm font-semibold text-gray-900">{currentDep.service_name}</span>
+                  <span className="text-[11px] text-[#7A8699] font-medium uppercase tracking-wider block mb-1">Service</span>
+                  <span className="text-sm font-semibold text-[#111827]">{currentDep.service_name}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 font-medium block mb-1">Environment</span>
-                  <span className="text-sm font-medium text-gray-900 capitalize">{currentDep.environment}</span>
+                  <span className="text-[11px] text-[#7A8699] font-medium uppercase tracking-wider block mb-1">Environment</span>
+                  <span className="text-sm font-medium text-[#111827] capitalize">{currentDep.environment}</span>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 font-medium block mb-1">Commit</span>
-                  <div className="flex items-center gap-1 text-sm font-mono text-gray-700 bg-gray-50 px-2 py-0.5 rounded border border-gray-200 w-fit">
-                    <GitCommit className="w-3.5 h-3.5" />
+                  <span className="text-[11px] text-[#7A8699] font-medium uppercase tracking-wider block mb-1">Commit</span>
+                  <div className="flex items-center gap-1 text-xs font-mono text-[#5B667A] bg-[#F8FAFC] px-2 py-1 rounded border border-[#E4E9F0] w-fit">
+                    <GitCommit className="w-3.5 h-3.5 text-[#7A8699]" />
                     <span>{currentDep.commit_sha}</span>
                   </div>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500 font-medium block mb-1">Status</span>
+                  <span className="text-[11px] text-[#7A8699] font-medium uppercase tracking-wider block mb-1">Status</span>
                   <StatusBadge status={currentDep.status} size="sm" />
                 </div>
               </div>
 
-              <div>
-                <span className="text-xs text-gray-500 font-medium block mb-2">Commit Message</span>
-                <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 font-mono">
+              <div className="mb-5">
+                <span className="text-[11px] text-[#7A8699] font-medium uppercase tracking-wider block mb-1.5">Commit Signature</span>
+                <div className="text-xs text-[#111827] bg-[#F8FAFC] p-3 rounded-lg border border-[#E4E9F0] font-mono leading-relaxed">
                   {currentDep.commit_message}
                 </div>
               </div>
 
-              {(() => {
-                const badge = getRiskBadge(currentDep.risk_level);
-                const RiskIcon = badge.icon;
-                return (
-                  <div className={`mt-6 flex items-start gap-4 p-4 rounded-xl border ${badge.bg}`}>
-                    <div className="mt-0.5">
-                      <RiskIcon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-bold uppercase tracking-wider opacity-80">Historical Risk Indicator</span>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/60 shadow-sm border border-black/5">
-                          {badge.label}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium opacity-90">
-                        {currentDep.risk_reason || "No historical failure pattern associations identified for this change signature."}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-2 text-xs opacity-70">
-                        <Info className="w-3.5 h-3.5" />
-                        <span>Derived from previous deployment outcomes in organizational memory</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              {/* Historical Risk Indicator */}
+              <RiskIndicator
+                riskLevel={currentDep.risk_level}
+                riskReason={currentDep.risk_reason}
+              />
             </div>
           )}
 
+          {/* OpsMemory Learning Progression (Before vs After) */}
           {demo && (
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              <div className="border-b border-gray-200 bg-gray-50 px-5 py-4 flex items-center justify-between">
+            <div className="card-enterprise overflow-hidden">
+              <div className="border-b border-[#E4E9F0] bg-[#F8FAFC] px-5 py-3.5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900">OpsMemory Learning Progression</h3>
+                  <Brain className="w-4 h-4 text-[#6D5CE7]" />
+                  <h3 className="text-sm font-bold text-[#111827]">OpsMemory Learning Progression</h3>
                 </div>
-                <span className="text-xs font-mono bg-white border border-gray-200 px-2 py-1 rounded text-gray-600">
+                <span className="text-xs font-mono text-[#5B667A] bg-white border border-[#E4E9F0] px-2 py-0.5 rounded">
                   FINGERPRINT: {demo.fingerprint}
                 </span>
               </div>
+
               <div className="p-5">
-                <p className="text-sm text-gray-600 mb-6">
-                  <span className="font-semibold text-gray-900">Scenario:</span> {demo.scenario}
+                <p className="text-xs sm:text-sm text-[#5B667A] mb-5">
+                  <span className="font-semibold text-[#111827]">Observed Incident:</span> {demo.scenario}
                 </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-6 w-6 rounded bg-gray-100 flex items-center justify-center border border-gray-200">
-                        <span className="text-xs font-bold text-gray-600">1</span>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Step 1: Initial State */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-5 rounded-full bg-[#F1F4F9] flex items-center justify-center border border-[#E4E9F0]">
+                        <span className="text-[10px] font-bold text-[#5B667A]">1</span>
                       </div>
-                      <h4 className="text-sm font-semibold text-gray-900">Initial State (Before Learning)</h4>
+                      <h4 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+                        Initial State (Before Learning)
+                      </h4>
                     </div>
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
-                      <p className="text-gray-500 text-xs mb-1.5 uppercase font-semibold tracking-wide">AI Suggestion</p>
-                      <p className="text-gray-900">{demo.before_learning.ai_initial}</p>
-                    </div>
-                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm">
-                      <p className="text-blue-700 text-xs mb-1.5 uppercase font-semibold tracking-wide flex items-center gap-1.5">
-                        <UserCheck className="w-3.5 h-3.5" /> Engineer Correction
+                    <div className="bg-[#F8FAFC] border border-[#E4E9F0] rounded-lg p-3.5 text-xs">
+                      <p className="text-[#7A8699] text-[10px] uppercase font-bold tracking-wide mb-1">
+                        Naive AI Proposal
                       </p>
-                      <p className="text-blue-900">{demo.before_learning.engineer_correction}</p>
+                      <p className="text-[#111827]">{demo.before_learning.ai_initial}</p>
+                    </div>
+                    <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-3.5 text-xs">
+                      <p className="text-[#2563EB] text-[10px] uppercase font-bold tracking-wide flex items-center gap-1.5 mb-1">
+                        <UserCheck className="w-3.5 h-3.5" /> Engineer Override (Ground Truth)
+                      </p>
+                      <p className="text-[#111827] font-medium">{demo.before_learning.engineer_correction}</p>
                     </div>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                       <div className="h-6 w-6 rounded bg-blue-100 flex items-center justify-center border border-blue-200">
-                        <span className="text-xs font-bold text-blue-700">2</span>
+                  {/* Step 2: After Learning */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-5 rounded-full bg-[#F3F0FF] flex items-center justify-center border border-[#DDD6FE]">
+                        <span className="text-[10px] font-bold text-[#6D5CE7]">2</span>
                       </div>
-                      <h4 className="text-sm font-semibold text-gray-900">Current State (After Learning)</h4>
+                      <h4 className="text-xs font-bold text-[#111827] uppercase tracking-wider">
+                        Current State (With Hindsight)
+                      </h4>
                     </div>
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4 text-sm">
-                      <p className="text-emerald-700 text-xs mb-1.5 uppercase font-semibold tracking-wide flex items-center gap-1.5">
-                        <Brain className="w-3.5 h-3.5" /> Hindsight Memory Recalled
+                    <div className="bg-[#F3F0FF] border border-[#DDD6FE] rounded-lg p-3.5 text-xs">
+                      <p className="text-[#6D5CE7] text-[10px] uppercase font-bold tracking-wide flex items-center gap-1.5 mb-1">
+                        <Brain className="w-3.5 h-3.5" /> Recalled Engineering Memory
                       </p>
-                      <p className="text-emerald-900">{demo.after_learning.ai_recalled}</p>
+                      <p className="text-[#111827] font-medium">{demo.after_learning.ai_recalled}</p>
                     </div>
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
-                      <p className="text-gray-500 text-xs mb-1.5 uppercase font-semibold tracking-wide">New AI Recommendation</p>
-                      <p className="text-gray-900">{demo.after_learning.ai_recommendation}</p>
+                    <div className="bg-[#ECFDF3] border border-[#A6F4C5] rounded-lg p-3.5 text-xs">
+                      <p className="text-[#16A36A] text-[10px] uppercase font-bold tracking-wide flex items-center gap-1.5 mb-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Verified Recovery Action
+                      </p>
+                      <p className="text-[#111827] font-medium">{demo.after_learning.ai_recommendation}</p>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           )}
-
         </div>
 
+        {/* Right Column: Recent Incidents & Resolution Effectiveness */}
         <div className="space-y-6">
-          
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50/50">
+          {/* Recent Incidents Card */}
+          <div className="card-enterprise overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-[#E4E9F0] bg-[#F8FAFC]">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-500" />
-                <h3 className="text-sm font-semibold text-gray-900">Recent Incidents</h3>
+                <AlertTriangle className="w-4 h-4 text-[#D99100]" />
+                <h3 className="text-sm font-bold text-[#111827]">Recent Incidents</h3>
               </div>
-              <button 
+              <button
                 onClick={() => navigate('/incidents')}
-                className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
+                className="text-xs text-[#2563EB] hover:text-[#1D4ED8] font-medium flex items-center gap-1 transition-colors"
               >
                 View all <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[#E4E9F0]">
               {data.recent_incidents.map((inc) => (
-                <div 
+                <div
                   key={inc.id}
                   onClick={() => navigate(`/incidents/${inc.id}`)}
-                  className="p-4 hover:bg-gray-50 cursor-pointer transition-colors group block"
+                  className="p-3.5 hover:bg-[#F8FAFC] cursor-pointer transition-colors group block"
                 >
-                  <div className="flex items-start justify-between mb-1.5">
-                    <span className="font-mono text-xs font-semibold text-blue-600 group-hover:text-blue-700">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <span className="font-mono text-xs font-semibold text-[#2563EB] group-hover:underline">
                       {inc.incident_code}
                     </span>
                     <StatusBadge status={inc.status} size="sm" />
                   </div>
-                  <p className="text-sm text-gray-900 font-medium mb-2 line-clamp-1">{inc.title}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span className="font-mono">{inc.service_name}</span>
+                  <p className="text-xs sm:text-sm text-[#111827] font-medium line-clamp-1 mb-2">
+                    {inc.title}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-[#5B667A]">
+                    <span className="font-mono text-[11px]">{inc.service_name}</span>
                     {inc.retained_in_hindsight && (
-                      <span className="text-emerald-700 flex items-center gap-1 font-medium bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded">
+                      <span className="text-[#6D5CE7] flex items-center gap-1 text-[11px] font-semibold bg-[#F3F0FF] border border-[#DDD6FE] px-2 py-0.5 rounded-full">
                         <Brain className="w-3 h-3" />
                         Retained
                       </span>
@@ -382,37 +401,46 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50/50">
+          {/* Historical Resolution Effectiveness */}
+          <div className="card-enterprise overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-[#E4E9F0] bg-[#F8FAFC]">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <h3 className="text-sm font-semibold text-gray-900">Resolution Effectiveness</h3>
+                <TrendingUp className="w-4 h-4 text-[#16A36A]" />
+                <h3 className="text-sm font-bold text-[#111827]">Resolution Effectiveness</h3>
               </div>
-              <span className="text-[10px] font-mono text-gray-500 uppercase">Org Data</span>
+              <span className="text-[10px] font-mono text-[#7A8699] uppercase bg-white border border-[#E4E9F0] px-1.5 py-0.2 rounded">
+                Org Ledger
+              </span>
             </div>
             <div className="p-4 space-y-4">
               {data.historical_effectiveness.map((eff, idx) => (
-                <div key={idx} className="text-sm">
+                <div key={idx} className="text-xs sm:text-sm">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-medium text-gray-900">{eff.remediation_action}</span>
-                    <span className={`font-mono text-xs font-bold ${
-                      eff.success_rate_percent >= 80 ? 'text-emerald-600' : 'text-amber-600'
-                    }`}>
+                    <span className="font-medium text-[#111827] truncate max-w-[180px]">
+                      {eff.remediation_action}
+                    </span>
+                    <span
+                      className={`font-mono text-xs font-bold ${
+                        eff.success_rate_percent >= 80 ? 'text-[#16A36A]' : 'text-[#D99100]'
+                      }`}
+                    >
                       {eff.success_rate_percent}%
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden mb-2">
-                    <div 
-                      className={`h-full rounded-full transition-all ${
-                        eff.success_rate_percent >= 80 ? 'bg-emerald-500' : 'bg-amber-500'
+                  <div className="w-full bg-[#E4E9F0] h-1.5 rounded-full overflow-hidden mb-1.5">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        eff.success_rate_percent >= 80 ? 'bg-[#16A36A]' : 'bg-[#D99100]'
                       }`}
                       style={{ width: `${eff.success_rate_percent}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-[11px] text-gray-500">
-                    <span>{eff.success_count} success / {eff.failure_count} failed</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                  <div className="flex justify-between text-[11px] text-[#7A8699]">
+                    <span>
+                      {eff.success_count} success / {eff.failure_count} failed
+                    </span>
+                    <span className="flex items-center gap-1 font-mono">
+                      <Clock className="w-3 h-3 text-[#7A8699]" />
                       {eff.avg_recovery_time_minutes}m avg
                     </span>
                   </div>
@@ -420,7 +448,6 @@ export const Dashboard: React.FC = () => {
               ))}
             </div>
           </div>
-
         </div>
       </div>
 

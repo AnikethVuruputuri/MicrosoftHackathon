@@ -97,10 +97,10 @@ export function PipelinesPage() {
         actions={
           <button
             onClick={() => navigate('/deployments/simulate')}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+            className="btn-primary"
           >
             <Play className="h-4 w-4" />
-            Simulate Pipeline Run
+            <span>Simulate Pipeline Run</span>
           </button>
         }
       />
@@ -322,9 +322,17 @@ export function PipelinesPage() {
           ]}
           data={filteredRuns}
           keyExtractor={(r) => r.id}
-          onRowClick={(r) => setActiveLogRun(r)}
-          emptyTitle="No pipeline runs found"
-          emptyDescription="No CI/CD workflow executions match your filter parameters."
+          emptyTitle="No pipeline runs yet"
+          emptyDescription="Connect a repository or simulate a pipeline run to start observing workflow activity."
+          emptyAction={
+            <button
+              onClick={() => navigate('/deployments/simulate')}
+              className="btn-primary text-xs"
+            >
+              <Play className="h-3.5 w-3.5" />
+              <span>Simulate Pipeline Run</span>
+            </button>
+          }
         />
       )}
 

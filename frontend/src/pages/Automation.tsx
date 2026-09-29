@@ -162,23 +162,62 @@ export function Automation() {
         }
       />
 
-      {/* Global Safety State Notice */}
-      <div className="flex items-center justify-between p-3.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600">
-        <div className="flex items-center gap-2">
-          <span className={`h-2.5 w-2.5 rounded-full ${policy?.enabled ? 'bg-emerald-500' : 'bg-gray-400'}`} />
-          <span className="font-semibold text-gray-900">
-            Subsystem Policy Mode:
+      {/* Closed-Loop Safety Flow Architecture */}
+      <div className="card-enterprise p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#5B667A]">
+            Autonomous Safety & Execution Architecture
           </span>
-          <span className="capitalize font-mono px-2 py-0.5 bg-gray-100 rounded text-gray-800">
+          <span className="text-[11px] text-[#2563EB] font-semibold flex items-center gap-1">
+            <Info className="w-3.5 h-3.5" />
+            Deterministic Policy Gate
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-2.5">
+          <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-3 text-center">
+            <div className="text-[10px] font-bold text-[#2563EB] uppercase mb-0.5">1. AI Proposes</div>
+            <div className="text-xs font-bold text-[#111827]">Diagnoses Signature</div>
+            <div className="text-[11px] text-[#5B667A] mt-0.5">Suggests recovery action</div>
+          </div>
+          <div className="bg-[#FFF8E6] border border-[#FDE68A] rounded-lg p-3 text-center">
+            <div className="text-[10px] font-bold text-[#D99100] uppercase mb-0.5">2. Policy Validates</div>
+            <div className="text-xs font-bold text-[#111827]">Blast Radius Check</div>
+            <div className="text-[11px] text-[#5B667A] mt-0.5">Cooldown & env limits</div>
+          </div>
+          <div className="bg-[#F8FAFC] border border-[#E4E9F0] rounded-lg p-3 text-center">
+            <div className="text-[10px] font-bold text-[#5B667A] uppercase mb-0.5">3. Execution</div>
+            <div className="text-xs font-bold text-[#111827]">Deterministic Run</div>
+            <div className="text-[11px] text-[#5B667A] mt-0.5">Safe auto-run or human gate</div>
+          </div>
+          <div className="bg-[#ECFDF3] border border-[#A6F4C5] rounded-lg p-3 text-center">
+            <div className="text-[10px] font-bold text-[#16A36A] uppercase mb-0.5">4. Health Verified</div>
+            <div className="text-xs font-bold text-[#111827]">Probe Confirmation</div>
+            <div className="text-[11px] text-[#5B667A] mt-0.5">Ensures no cascading failure</div>
+          </div>
+          <div className="bg-[#F3F0FF] border border-[#DDD6FE] rounded-lg p-3 text-center">
+            <div className="text-[10px] font-bold text-[#6D5CE7] uppercase mb-0.5">5. Memory Retained</div>
+            <div className="text-xs font-bold text-[#111827]">Hindsight Learned</div>
+            <div className="text-[11px] text-[#5B667A] mt-0.5">Persistent org memory bank</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Global Safety State Notice */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 bg-white border border-[#E4E9F0] rounded-xl text-xs text-[#5B667A] gap-2 shadow-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`h-2.5 w-2.5 rounded-full ${policy?.enabled ? 'bg-[#16A36A]' : 'bg-[#7A8699]'}`} />
+          <span className="font-semibold text-[#111827]">Subsystem Policy Mode:</span>
+          <span className="capitalize font-mono px-2 py-0.5 bg-[#F8FAFC] border border-[#E4E9F0] rounded text-[#111827] font-medium">
             {policy?.mode ? policy.mode.replace('_', ' ') : 'Approval Required'}
           </span>
-          <span className="text-gray-400">|</span>
-          <span>Max Attempts/Incident: <strong>{policy?.max_attempts_per_incident || 2}</strong></span>
-          <span className="text-gray-400">|</span>
-          <span>Environments: <strong>{policy?.allowed_environments || 'staging, production'}</strong></span>
+          <span className="text-[#D5DDE8]">|</span>
+          <span>Max Attempts/Incident: <strong className="text-[#111827]">{policy?.max_attempts_per_incident || 2}</strong></span>
+          <span className="text-[#D5DDE8]">|</span>
+          <span>Environments: <strong className="text-[#111827]">{policy?.allowed_environments || 'staging, production'}</strong></span>
         </div>
-        <div className="flex items-center gap-1 text-gray-500">
-          <Info className="h-3.5 w-3.5 text-blue-500" />
+        <div className="flex items-center gap-1.5 text-[#5B667A]">
+          <Info className="h-3.5 w-3.5 text-[#2563EB] flex-shrink-0" />
           <span>LLM proposes actions; Deterministic Policy Engine strictly decides execution.</span>
         </div>
       </div>

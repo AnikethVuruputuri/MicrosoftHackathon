@@ -1,65 +1,82 @@
 import React from 'react';
-import { ShieldCheck, AlertTriangle, ShieldAlert, Info } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, ShieldAlert, AlertOctagon, Info } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { RISK_LEVELS } from '../lib/constants';
 
 interface Props {
   riskLevel: string;
   riskReason?: string;
+  className?: string;
+  compact?: boolean;
 }
 
-export const RiskIndicator: React.FC<Props> = ({ riskLevel, riskReason }) => {
-  const level = (riskLevel || 'low').toLowerCase();
+export const RiskIndicator: React.FC<Props> = ({
+  riskLevel,
+  riskReason,
+  className,
+  compact = false,
+}) => {
+  const level = (riskLevel || 'low').toLowerCase() as keyof typeof RISK_LEVELS;
+  const config = RISK_LEVELS[level] || RISK_LEVELS.low;
 
-  const config = (() => {
-    switch (level) {
-      case 'critical':
-      case 'high':
-        return {
-          bg: 'bg-red-50',
-          border: 'border-red-200',
-          text: 'text-red-700',
-          iconColor: 'text-red-500',
-          icon: ShieldAlert,
-          label: 'High Risk',
-        };
-      case 'medium':
-        return {
-          bg: 'bg-amber-50',
-          border: 'border-amber-200',
-          text: 'text-amber-700',
-          iconColor: 'text-amber-500',
-          icon: AlertTriangle,
-          label: 'Medium Risk',
-        };
-      default:
-        return {
-          bg: 'bg-emerald-50',
-          border: 'border-emerald-200',
-          text: 'text-emerald-700',
-          iconColor: 'text-emerald-500',
-          icon: ShieldCheck,
-          label: 'Low Risk',
-        };
-    }
-  })();
+  const Icon =
+    level === 'critical'
+      ? AlertOctagon
+      : level === 'high'
+      ? ShieldAlert
+      : level === 'medium'
+      ? AlertTriangle
+      : ShieldCheck;
 
-  const Icon = config.icon;
+  if (compact) {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border',
+          config.bg,
+          config.color,
+          config.border,
+          className
+        )}
+      >
+        <Icon className="w-3 h-3 flex-shrink-0" />
+        <span>{config.label}</span>
+      </span>
+    );
+  }
 
   return (
-    <div className={cn('flex items-start gap-3 p-3 rounded-lg border', config.bg, config.border)}>
-      <div className={cn('p-1.5 rounded', config.bg)}>
-        <Icon className={cn('w-4 h-4', config.iconColor)} />
+    <div
+      className={cn(
+        'flex items-start gap-3 p-3.5 rounded-xl border',
+        config.bg,
+        config.border,
+        className
+      )}
+    >
+      <div className={cn('p-1 rounded-md bg-white/80 border', config.border, 'flex-shrink-0 mt-0.5')}>
+        <Icon className={cn('w-4 h-4', config.color)} />
       </div>
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-xs font-medium text-gray-500">Risk Assessment:</span>
-          <span className={cn('text-xs font-semibold', config.text)}>{config.label}</span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#5B667A]">
+            Historical Risk Assessment
+          </span>
+          <span
+            className={cn(
+              'text-[10px] font-bold px-1.5 py-0.2 rounded-full border bg-white/90',
+              config.color,
+              config.border
+            )}
+          >
+            {config.label}
+          </span>
         </div>
-        <p className="text-xs text-gray-600 leading-relaxed">
+        <p className="text-xs text-[#111827] font-medium leading-relaxed">
           {riskReason || 'No historical failure pattern associations identified for this change signature.'}
         </p>
-        <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-1 font-mono">
-          <Info className="w-3 h-3" />
+        <div className="flex items-center gap-1 text-[11px] text-[#7A8699] mt-1.5">
+          <Info className="w-3 h-3 flex-shrink-0" />
           <span>Derived from previous deployment outcomes in organizational memory</span>
         </div>
       </div>

@@ -66,30 +66,31 @@ export const LiveDemoModal: React.FC<Props> = ({ isOpen, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
       <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white px-6 py-5 flex items-center justify-between relative overflow-hidden">
-          <div className="absolute right-0 top-0 translate-x-8 -translate-y-8 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
-          
-          <div className="flex items-center gap-3 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center shadow-inner">
-              <Sparkles className="w-5 h-5 text-blue-300" />
+        {/* Clean Light Enterprise Header */}
+        <div className="bg-white border-b border-[#E4E9F0] px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-center shadow-xs">
+              <Sparkles className="w-4 h-4 text-[#2563EB]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold tracking-tight text-white">OpsMemory Hackathon Presentation Arena</h2>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-400/20 text-blue-200 border border-blue-400/30 px-2 py-0.5 rounded-full">
+                <h2 className="text-base font-bold tracking-tight text-[#111827]">
+                  OpsMemory Evaluation Arena
+                </h2>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] px-2 py-0.2 rounded-full">
                   Live Evaluation
                 </span>
               </div>
-              <p className="text-xs text-blue-200/80">
-                Demonstrating AI DevOps Incident Intelligence, Human Correction Retention, and Safe Autonomous Recovery
+              <p className="text-xs text-[#5B667A]">
+                Demonstrating AI Incident Intelligence, Human Correction Retention, and Safe Autonomous Recovery
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="text-[#7A8699] hover:text-[#111827] p-1.5 rounded-lg hover:bg-[#F8FAFC] transition-colors"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
