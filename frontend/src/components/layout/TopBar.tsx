@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, AlertTriangle, Brain, GitBranch, Check, X, ShieldAlert } from 'lucide-react';
+import { Search, Bell, AlertTriangle, Brain, GitBranch, Menu, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { SearchModal } from '../SearchModal';
 import { LiveDemoModal } from '../LiveDemoModal';
-import { Sparkles, Zap } from 'lucide-react';
 
 interface TopBarProps {
   className?: string;
+  onMenuToggle?: () => void;
 }
 
 function Breadcrumbs() {
@@ -15,7 +15,7 @@ function Breadcrumbs() {
   const segments = location.pathname.split('/').filter(Boolean);
 
   if (segments.length === 0) {
-    return <span className="text-sm text-gray-500">Overview</span>;
+    return <span className="text-sm font-medium text-gray-700">Overview</span>;
   }
 
   return (
@@ -29,7 +29,7 @@ function Breadcrumbs() {
         return (
           <span key={i} className="flex items-center gap-1.5">
             {i > 0 && <span className="text-gray-300">/</span>}
-            <span className={cn(isLast ? 'text-gray-900 font-medium' : 'text-gray-500')}>
+            <span className={cn(isLast ? 'text-gray-900 font-semibold' : 'text-gray-500 hidden sm:inline')}>
               {label}
             </span>
           </span>
@@ -39,7 +39,7 @@ function Breadcrumbs() {
   );
 }
 
-export function TopBar({ className }: TopBarProps) {
+export function TopBar({ className, onMenuToggle }: TopBarProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
@@ -118,46 +118,58 @@ export function TopBar({ className }: TopBarProps) {
     <>
       <header
         className={cn(
-          'fixed top-0 right-0 left-60 h-14 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-20',
+          'fixed top-0 right-0 left-0 md:left-60 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-20 transition-all duration-200',
           className
         )}
       >
-        <Breadcrumbs />
+        <div className="flex items-center gap-2">
+          {/* Hamburger toggle for mobile/tablet */}
+          {onMenuToggle && (
+            <button
+              onClick={onMenuToggle}
+              className="md:hidden p-1.5 -ml-1 text-gray-500 hover:text-gray-900 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Toggle navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+          )}
+          <Breadcrumbs />
+        </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Search trigger */}
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:border-gray-300 transition-all cursor-pointer shadow-xs"
+            className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 hover:border-gray-300 transition-all cursor-pointer shadow-2xs"
             title="Global search across all items (Ctrl+K)"
           >
             <Search className="h-3.5 w-3.5 text-gray-400" />
-            <span className="text-gray-500 font-normal">Search...</span>
-            <kbd className="hidden sm:inline text-[10px] font-mono text-gray-500 bg-white border border-gray-200 rounded px-1.5 py-0.5 shadow-2xs">
+            <span className="hidden sm:inline text-gray-600 font-normal">Search...</span>
+            <kbd className="hidden md:inline text-[10px] font-mono text-gray-500 bg-white border border-gray-200 rounded px-1.5 py-0.5 shadow-2xs">
               Ctrl K
             </kbd>
           </button>
 
-          {/* Live Demo Arena trigger button for Hackathon judges & presenters */}
+          {/* Live Demo Arena trigger button */}
           <button
             onClick={() => setIsDemoModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-md shadow-xs shadow-indigo-200 transition-all cursor-pointer animate-pulse hover:animate-none"
-            title="Launch 2-Minute Interactive Hackathon Demo & Benchmarks"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-md shadow-xs shadow-indigo-100 transition-all cursor-pointer"
+            title="Launch 2-Minute Interactive Demo & Benchmarks"
           >
             <Sparkles className="h-3.5 w-3.5 text-amber-300" />
-            <span>Live Demo Arena</span>
+            <span className="hidden xs:inline sm:inline">Demo Arena</span>
           </button>
 
           {/* Environment badge */}
-          <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full select-none">
-            Demo
+          <span className="hidden sm:inline-flex text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full select-none">
+            Production Ready
           </span>
 
           {/* Notifications Trigger & Popover */}
           <div className="relative" ref={notificationsRef}>
             <button
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-              className="relative text-gray-400 hover:text-gray-700 transition-colors p-1.5 rounded-md hover:bg-gray-100"
+              className="relative text-gray-500 hover:text-gray-800 transition-colors p-1.5 rounded-md hover:bg-gray-100"
               title="Notifications"
             >
               <Bell className="h-4.5 w-4.5" />
@@ -167,8 +179,8 @@ export function TopBar({ className }: TopBarProps) {
             </button>
 
             {isNotificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-xl shadow-2xl overflow-hidden z-30 animate-in fade-in zoom-in-95 duration-100">
-                <div className="p-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+              <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden z-30 animate-in fade-in zoom-in-95 duration-100">
+                <div className="p-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/80">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-gray-900">Notifications</span>
                     {unreadCount > 0 && (
