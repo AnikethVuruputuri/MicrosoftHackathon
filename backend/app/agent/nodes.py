@@ -337,11 +337,14 @@ def handle_correction_node(state: OpsMemoryState) -> Dict[str, Any]:
 
 
 def resolution_node(state: OpsMemoryState) -> Dict[str, Any]:
-    """Stage 9: Applies remediation and records resolution outcome."""
+    """Stage 9: Records an explicitly confirmed resolution outcome."""
     incident_id = state.get("incident_id")
     action = state.get("selected_action") or state.get("recommended_actions", ["Rollback"])[0]
     fingerprint = state.get("failure_fingerprint")
     service = state.get("service")
+    supplied_outcome = state.get("resolution_outcome") or {}
+    success = bool(supplied_outcome.get("success", False))
+    recovery_time_minutes = int(supplied_outcome.get("recovery_time_minutes", 0))
 
     with Session(engine) as session:
         # Record resolution outcome
@@ -350,27 +353,28 @@ def resolution_node(state: OpsMemoryState) -> Dict[str, Any]:
             service_name=service,
             failure_fingerprint=fingerprint,
             remediation_action=action,
-            success=True,
-            recovery_time_minutes=3,
+            success=success,
+            recovery_time_minutes=recovery_time_minutes,
             rollback_required="rollback" in action.lower(),
-            engineer_confirmed=True
+            engineer_confirmed=True,
+            notes=supplied_outcome.get("notes")
         )
         session.add(outcome)
 
         inc = session.get(Incident, incident_id)
         if inc:
             inc.remediation_applied = action
-            inc.resolution_status = "success"
-            inc.recovery_time_seconds = 180
-            inc.status = "resolved"
+            inc.resolution_status = "success" if success else "failed"
+            inc.recovery_time_seconds = recovery_time_minutes * 60
+            inc.status = "resolved" if success else "investigating"
             session.add(inc)
         session.commit()
 
     stage_log = {
         "stage": "resolution",
-        "title": "Remediation Applied & Verified",
+        "title": "Resolution Outcome Recorded",
         "status": "completed",
-        "summary": f"Applied '{action}' successfully. Recovery time: 3m."
+        "summary": f"Human-confirmed outcome for '{action}': {'success' if success else 'failure'}.",
     }
 
     return {

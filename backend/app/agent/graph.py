@@ -53,8 +53,8 @@ def create_opsmemory_graph():
         }
     )
 
-    # Post-correction flow
-    builder.add_edge("handle_correction", "resolution")
+    # A correction teaches the system but does not prove a fix was applied.
+    builder.add_edge("handle_correction", "retain_learning")
     builder.add_edge("resolution", "retain_learning")
     builder.add_edge("retain_learning", END)
 

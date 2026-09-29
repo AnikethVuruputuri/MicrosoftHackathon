@@ -8,6 +8,10 @@ from app.main import app
 from app.config import settings
 from app.database.session import init_db
 from app.database.seed import seed_database
+from app.database.session import engine
+from sqlmodel import Session, select
+from app.models.schemas import AutomationIncidentSource, WebhookEvent
+from app.services.queue import TaskQueue
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
@@ -78,3 +82,82 @@ def test_gitlab_webhook_endpoint():
     resp = client.post("/api/webhooks/gitlab", content=raw_bytes, headers=headers)
     assert resp.status_code == 200
     assert resp.json()["status"] == "accepted"
+
+
+@pytest.mark.asyncio
+async def test_failed_webhook_persists_exact_pipeline_source():
+    with Session(engine) as session:
+        webhook_event = WebhookEvent(
+            provider="github",
+            event_type="workflow_run",
+            delivery_id=f"automation-{uuid.uuid4()}",
+            payload_hash="test-hash",
+            status="received",
+        )
+        session.add(webhook_event)
+        session.commit()
+        session.refresh(webhook_event)
+        event_id = webhook_event.id
+
+    queue = TaskQueue()
+    await queue._handle_webhook({
+        "webhook_event_id": event_id,
+        "normalized_payload": {
+            "provider": "github",
+            "organization": "opsmemory-test-owner",
+            "repository": "automation-test-repo",
+            "pipeline_status": "failed",
+            "pipeline_id": "998877",
+            "environment": "staging",
+            "commit_sha": "testsha",
+            "commit_message": "test failure",
+            "author": "test-user",
+            "logs": "transient timeout",
+        },
+    })
+
+    with Session(engine) as session:
+        source = session.exec(
+            select(AutomationIncidentSource)
+            .where(AutomationIncidentSource.pipeline_id == "998877")
+        ).first()
+        assert source is not None
+        assert source.provider == "github"
+        assert source.repository == "opsmemory-test-owner/automation-test-repo"
+        before_count = len(session.exec(
+            select(AutomationIncidentSource).where(AutomationIncidentSource.pipeline_id == "998877")
+        ).all())
+
+    duplicate_event = WebhookEvent(
+        provider="github",
+        event_type="workflow_run",
+        delivery_id=f"automation-duplicate-{uuid.uuid4()}",
+        payload_hash="duplicate-test-hash",
+        status="received",
+    )
+    with Session(engine) as session:
+        session.add(duplicate_event)
+        session.commit()
+        session.refresh(duplicate_event)
+        duplicate_event_id = duplicate_event.id
+
+    await queue._handle_webhook({
+        "webhook_event_id": duplicate_event_id,
+        "normalized_payload": {
+            "provider": "github",
+            "organization": "opsmemory-test-owner",
+            "repository": "automation-test-repo",
+            "pipeline_status": "failed",
+            "pipeline_id": "998877",
+            "environment": "staging",
+            "commit_sha": "testsha",
+            "commit_message": "duplicate delivery",
+            "author": "test-user",
+            "logs": "transient timeout",
+        },
+    })
+    with Session(engine) as session:
+        matches = session.exec(
+            select(AutomationIncidentSource).where(AutomationIncidentSource.pipeline_id == "998877")
+        ).all()
+        assert len(matches) == before_count

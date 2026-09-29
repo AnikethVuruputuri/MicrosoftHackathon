@@ -14,6 +14,160 @@ import {
 
 const API_BASE = '/api';
 
+export interface AutomationSettings {
+  enabled: boolean;
+  emergency_stop: boolean;
+  ready: boolean;
+  executor_configured: boolean;
+  target_configured: boolean;
+  message: string;
+  provider: string | null;
+  repository: string;
+  health_check_url: string;
+  health_check_urls: string[];
+  gitlab_api_url: string;
+  kube_namespace: string;
+  kube_deployment: string;
+  kube_context: string;
+  kubernetes_enabled: boolean;
+  kubernetes_dry_run: boolean;
+}
+
+export interface AutomationServicePolicy {
+  service_name: string;
+  enabled: boolean;
+  allow_retry: boolean;
+  allow_restart: boolean;
+  allow_rollback: boolean;
+  cooldown_seconds: number;
+  max_attempts: number;
+  health_check_count: number;
+  health_check_interval_seconds: number;
+}
+
+export interface AutomationRunItem {
+  id: number;
+  incident_id: number;
+  incident_code: string | null;
+  service_name: string | null;
+  provider: string;
+  repository: string;
+  pipeline_id: string;
+  external_pipeline_id: string | null;
+  action: string;
+  status: string;
+  reason: string;
+  health_check_passed: boolean | null;
+  execution_attempted: boolean;
+  compensated: boolean | null;
+  human_confirmed: boolean;
+  dry_run: boolean;
+  target_namespace: string | null;
+  target_deployment: string | null;
+  plan_json: string | null;
+  started_at: string;
+}
+
+export async function fetchAutomationSettings(): Promise<AutomationSettings> {
+  const res = await fetch(`${API_BASE}/system/automation`);
+  if (!res.ok) throw new Error('Failed to fetch automation settings');
+  return res.json();
+}
+
+export async function updateAutomationSettings(enabled: boolean): Promise<AutomationSettings> {
+  const res = await fetch(`${API_BASE}/system/automation`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to update automation settings');
+  }
+  return res.json();
+}
+
+export async function updateAutomationTarget(data: {
+  provider: 'github' | 'gitlab' | 'kubernetes';
+  repository: string;
+  health_check_urls: string[];
+  gitlab_api_url?: string;
+  kube_namespace?: string;
+  kube_deployment?: string;
+  kube_context?: string;
+}): Promise<AutomationSettings> {
+  const res = await fetch(`${API_BASE}/system/automation/target`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to save automation target');
+  }
+  return res.json();
+}
+
+export async function updateAutomationEmergencyStop(enabled: boolean): Promise<{ emergency_stop: boolean }> {
+  const res = await fetch(`${API_BASE}/system/automation/emergency-stop`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+  if (!res.ok) throw new Error('Failed to change emergency stop');
+  return res.json();
+}
+
+export async function updateKubernetesAutomation(enabled: boolean, dryRun: boolean): Promise<{
+  kubernetes_enabled: boolean;
+  kubernetes_dry_run: boolean;
+}> {
+  const res = await fetch(`${API_BASE}/system/automation/kubernetes`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled, dry_run: dryRun }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to update Kubernetes automation settings');
+  }
+  return res.json();
+}
+
+export async function fetchAutomationPolicies(): Promise<AutomationServicePolicy[]> {
+  const res = await fetch(`${API_BASE}/system/automation/policies`);
+  if (!res.ok) throw new Error('Failed to fetch service automation policies');
+  return res.json();
+}
+
+export async function updateAutomationPolicy(
+  serviceName: string,
+  policy: Omit<AutomationServicePolicy, 'service_name'>,
+): Promise<AutomationServicePolicy> {
+  const res = await fetch(`${API_BASE}/system/automation/policies/${encodeURIComponent(serviceName)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(policy),
+  });
+  if (!res.ok) throw new Error('Failed to update service automation policy');
+  return res.json();
+}
+
+export async function fetchAutomationRuns(): Promise<AutomationRunItem[]> {
+  const res = await fetch(`${API_BASE}/system/automation/runs`);
+  if (!res.ok) throw new Error('Failed to fetch automation runs');
+  return res.json();
+}
+
+export async function confirmAutomationLearning(runId: number, notes?: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/system/automation/runs/${runId}/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notes }),
+  });
+  if (!res.ok) throw new Error('Could not confirm the automation result');
+}
+
 export async function fetchDashboard(): Promise<DashboardData> {
   const res = await fetch(`${API_BASE}/dashboard`);
   if (!res.ok) throw new Error('Failed to fetch dashboard summary');

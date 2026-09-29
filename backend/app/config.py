@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     # Database (PostgreSQL preferred, SQLite supported)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./opsmemory.db")
 
+    # Automated remediation stays disabled until a trusted provider is configured.
+    AUTOMATION_ENABLED: bool = os.getenv("AUTOMATION_ENABLED", "true").lower() == "true"
+    AUTOMATION_CONFIDENCE_THRESHOLD: float = float(os.getenv("AUTOMATION_CONFIDENCE_THRESHOLD", "0.95"))
+    AUTOMATION_HEALTH_CHECK_COUNT: int = int(os.getenv("AUTOMATION_HEALTH_CHECK_COUNT", "3"))
+    AUTOMATION_HEALTH_CHECK_INTERVAL_SECONDS: int = int(os.getenv("AUTOMATION_HEALTH_CHECK_INTERVAL_SECONDS", "5"))
+
     # Redis Queue / Cache
     REDIS_URL: Optional[str] = os.getenv("REDIS_URL", None)
 
