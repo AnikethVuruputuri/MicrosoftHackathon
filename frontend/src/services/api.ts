@@ -71,13 +71,13 @@ export interface AutomationRunItem {
   started_at: string;
 }
 
-export async function fetchAutomationSettings(): Promise<AutomationSettings> {
+export async function fetchSystemAutomationSettings(): Promise<AutomationSettings> {
   const res = await fetch(`${API_BASE}/system/automation`);
   if (!res.ok) throw new Error('Failed to fetch automation settings');
   return res.json();
 }
 
-export async function updateAutomationSettings(enabled: boolean): Promise<AutomationSettings> {
+export async function updateSystemAutomationSettings(enabled: boolean): Promise<AutomationSettings> {
   const res = await fetch(`${API_BASE}/system/automation`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
