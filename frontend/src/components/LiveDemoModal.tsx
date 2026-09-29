@@ -35,7 +35,7 @@ export const LiveDemoModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [benchmarkResult, setBenchmarkResult] = useState<any>(null);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (isPlayingAuto) {
       timer = setTimeout(() => {
         if (currentStep < 4) {
