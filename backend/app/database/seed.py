@@ -77,10 +77,22 @@ def seed_database():
             webhook_secret="opsmemory-gitlab-webhook-secret",
             last_sync_at=None
         )
-        session.add_all([gh_integration, gl_integration])
+        az_integration = Integration(
+            org_id=org.id,
+            provider="azure",
+            status="connected",
+            auth_type="webhook",
+            account_name="Cloud Monitor (Application Insights & APM Telemetry)",
+            account_id="sub-cloud-enterprise-prod",
+            encrypted_token=None,
+            webhook_secret="opsmemory-azure-webhook-secret",
+            last_sync_at=now
+        )
+        session.add_all([gh_integration, gl_integration, az_integration])
         session.commit()
         session.refresh(gh_integration)
         session.refresh(gl_integration)
+        session.refresh(az_integration)
 
         # 3. Repositories - Clean state (populated when user onboards from connected accounts in UI)
 

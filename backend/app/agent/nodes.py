@@ -434,13 +434,16 @@ def retain_learning_node(state: OpsMemoryState) -> Dict[str, Any]:
     }
 
 
-def evaluate_automation_candidate_node(state: OpsMemoryState) -> Dict[str, Any]:
+async def evaluate_automation_candidate_node(state: OpsMemoryState) -> Dict[str, Any]:
     """Stage 7b: Evaluates deterministic policy engine for candidate self-recovery action."""
+    from app.services.automation.manager import AutomationManager
     from app.services.automation.policy_engine import AutomationPolicyEngine
+    from app.models.schemas import AutomationAction
 
     incident_id = state.get("incident_id")
     service = state.get("service", "unknown_service")
     environment = state.get("environment", "production")
+    deployment_id = state.get("deployment_id")
     diag = state.get("initial_diagnosis", {})
     recommended_action = diag.get("recommended_action", "Rollback")
     confidence = diag.get("confidence_score", 0.85)
@@ -455,6 +458,8 @@ def evaluate_automation_candidate_node(state: OpsMemoryState) -> Dict[str, Any]:
     else:
         action_type = "no_action"
 
+    action_id = None
+    action_code = None
     with Session(engine) as session:
         engine_policy = AutomationPolicyEngine(session)
         decision, reason, risk = engine_policy.evaluate(
@@ -465,6 +470,36 @@ def evaluate_automation_candidate_node(state: OpsMemoryState) -> Dict[str, Any]:
             confidence=confidence
         )
 
+        if incident_id and action_type != "no_action":
+            # Check if there is already an active or completed automation action for this incident
+            existing_action = session.exec(
+                select(AutomationAction).where(
+                    AutomationAction.incident_id == incident_id,
+                    AutomationAction.action_type == action_type,
+                    AutomationAction.status.in_(["pending", "awaiting_approval", "running", "succeeded"])
+                )
+            ).first()
+            if not existing_action:
+                action_record = await AutomationManager.propose_and_evaluate(
+                    session=session,
+                    action_type=action_type,
+                    target=service,
+                    reason=f"Agent recommended {action_type} based on verified root cause: {diag.get('root_cause_hypothesis', 'Unknown')}",
+                    environment=environment,
+                    incident_id=incident_id,
+                    deployment_id=deployment_id,
+                    provider="github",
+                    repository=f"acme/{service}",
+                    confidence=confidence,
+                    org_id=1
+                )
+            else:
+                action_record = existing_action
+
+            if action_record:
+                action_id = action_record.id
+                action_code = action_record.action_code
+
     stage_log = {
         "stage": "evaluate_automation_policy",
         "title": "Deterministic Safety & Policy Evaluation",
@@ -472,14 +507,19 @@ def evaluate_automation_candidate_node(state: OpsMemoryState) -> Dict[str, Any]:
         "summary": f"Policy decision: [{decision.value.upper()}]. Action: {action_type} (Risk: {risk.value.upper()}). Reason: {reason}"
     }
 
+    candidate_data = {
+        "action_type": action_type,
+        "target": service,
+        "risk_level": risk.value,
+        "policy_result": decision.value,
+        "reason": reason
+    }
+    if action_id:
+        candidate_data["action_id"] = action_id
+        candidate_data["action_code"] = action_code
+
     return {
-        "automation_candidate": {
-            "action_type": action_type,
-            "target": service,
-            "risk_level": risk.value,
-            "policy_result": decision.value,
-            "reason": reason
-        },
+        "automation_candidate": candidate_data,
         "automation_decision": decision.value,
         "stage_logs": state.get("stage_logs", []) + [stage_log]
     }

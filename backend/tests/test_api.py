@@ -244,9 +244,59 @@ def test_dry_run_preview_cannot_be_confirmed_as_recovery():
         )
         session.add(run)
         session.commit()
-        session.refresh(run)
         run_id = run.id
 
     response = client.post(f"/api/system/automation/runs/{run_id}/confirm", json={})
 
     assert response.status_code == 409
+
+
+
+def test_azure_monitor_webhook_ingestion():
+    import uuid
+    payload = {
+        "schemaId": "azureMonitorCommonAlertSchema",
+        "data": {
+            "essentials": {
+                "alertId": f"az-alert-test-{uuid.uuid4().hex[:8]}",
+                "alertRule": "Payment-Service-Latency-Spike",
+                "severity": "Sev1",
+                "signalType": "Metric",
+                "monitorCondition": "Fired",
+                "monitoringService": "Application Insights",
+                "targetResourceName": "payment-api",
+                "description": "Payment API HTTP 500 error rate exceeded 15% threshold."
+            }
+        }
+    }
+    response = client.post("/api/webhooks/azure-monitor", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "accepted"
+    assert "INC-AZ-" in data["incident_code"]
+    assert data["severity"] == "high"
+
+
+
+def test_incident_post_mortem_and_teams_card():
+    incidents = client.get("/api/incidents").json()
+    assert len(incidents) > 0
+    inc_id = incidents[0]["id"]
+
+    # Test Post-Mortem RCA
+    pm_resp = client.get(f"/api/incidents/{inc_id}/post-mortem")
+    assert pm_resp.status_code == 200
+    pm_data = pm_resp.json()
+    assert "Post-Mortem & Root Cause Analysis" in pm_data["markdown_report"]
+    assert "5 Whys" in pm_data["markdown_report"]
+
+    assert "mttr_seconds" in pm_data
+    assert isinstance(pm_data["timeline"], list)
+
+    # Test Incident War Room Adaptive Card
+    tc_resp = client.get(f"/api/incidents/{inc_id}/teams-card")
+    assert tc_resp.status_code == 200
+    tc_data = tc_resp.json()
+    assert tc_data["adaptive_card"]["type"] == "AdaptiveCard"
+    assert tc_data["adaptive_card"]["version"] == "1.5"
+    assert any(a["type"] == "Action.Submit" for a in tc_data["adaptive_card"]["actions"])

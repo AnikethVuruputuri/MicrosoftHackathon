@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Bell, AlertTriangle, Brain, GitBranch, Check, X, ShieldAlert } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { SearchModal } from '../SearchModal';
+import { LiveDemoModal } from '../LiveDemoModal';
+import { Sparkles, Zap } from 'lucide-react';
 
 interface TopBarProps {
   className?: string;
@@ -40,6 +42,7 @@ function Breadcrumbs() {
 export function TopBar({ className }: TopBarProps) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(2);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -135,6 +138,16 @@ export function TopBar({ className }: TopBarProps) {
             </kbd>
           </button>
 
+          {/* Live Demo Arena trigger button for Hackathon judges & presenters */}
+          <button
+            onClick={() => setIsDemoModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-md shadow-xs shadow-indigo-200 transition-all cursor-pointer animate-pulse hover:animate-none"
+            title="Launch 2-Minute Interactive Hackathon Demo & Benchmarks"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+            <span>Live Demo Arena</span>
+          </button>
+
           {/* Environment badge */}
           <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full select-none">
             Demo
@@ -223,6 +236,9 @@ export function TopBar({ className }: TopBarProps) {
 
       {/* Global Command Palette / Search Dialog */}
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+      {/* Live Demo Sandbox & Presentation Walkthrough */}
+      <LiveDemoModal isOpen={isDemoModalOpen} onClose={() => setIsDemoModalOpen(false)} />
     </>
   );
 }

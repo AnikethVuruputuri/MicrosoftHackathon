@@ -1,12 +1,12 @@
 import os
-from sqlalchemy import inspect, text
+from sqlalchemy import inspect, text, event
 from sqlmodel import SQLModel, create_engine, Session
 from app.config import settings
 
 # Database engine configuration (PostgreSQL or SQLite)
 connect_args = {}
 if "sqlite" in settings.DATABASE_URL:
-    connect_args = {"check_same_thread": False}
+    connect_args = {"check_same_thread": False, "timeout": 30}
 
 engine = create_engine(
     settings.DATABASE_URL,
@@ -14,6 +14,17 @@ engine = create_engine(
     connect_args=connect_args,
     pool_pre_ping=True
 )
+
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    if "sqlite" in settings.DATABASE_URL:
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA busy_timeout=30000")
+        finally:
+            cursor.close()
 
 def init_db():
     SQLModel.metadata.create_all(engine)

@@ -138,3 +138,96 @@ async def gitlab_webhook(request: Request, session: Session = Depends(get_sessio
         "event_type": wb_event.event_type,
         "pipeline_status": norm_event.pipeline_status if norm_event else "untracked"
     }
+
+@router.post("/azure-monitor")
+async def azure_monitor_webhook(request: Request, session: Session = Depends(get_session)):
+    """
+    Ingests Cloud Monitor and APM alerts (Common Alert Schema).
+    Automatically maps cloud telemetry metrics to services and initiates autonomous diagnosis.
+    """
+    from app.models.schemas import Incident
+    from sqlmodel import func
+
+    raw_body = await request.body()
+    try:
+        payload = json.loads(raw_body.decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Malformed JSON payload")
+
+    data = payload.get("data", {})
+    essentials = data.get("essentials", {})
+    alert_rule = essentials.get("alertRule") or payload.get("alertRule") or "Azure Monitor Alert"
+    target_resource = essentials.get("targetResourceName") or essentials.get("targetResourceGroup") or payload.get("resourceName") or "payment-api"
+    
+    severity_map = {
+        "Sev0": "critical",
+        "Sev1": "high",
+        "Sev2": "medium",
+        "Sev3": "low",
+        "Sev4": "low"
+    }
+    sev_raw = essentials.get("severity", "Sev1")
+    severity = severity_map.get(sev_raw, "high")
+    description = essentials.get("description") or f"Azure Monitor [{alert_rule}] fired on {target_resource}."
+    
+    delivery_id = essentials.get("alertId") or f"az-alert-{datetime.now(timezone.utc).timestamp()}"
+    payload_hash = hashlib.sha256(raw_body).hexdigest()
+
+    deliv_str = str(delivery_id)[:250]
+    existing_event = session.exec(
+        select(WebhookEvent).where(WebhookEvent.delivery_id == deliv_str)
+    ).first()
+    if existing_event:
+        return {"status": "ignored", "reason": "duplicate_event", "delivery_id": deliv_str}
+
+    # Record Webhook Event
+    wb_event = WebhookEvent(
+        org_id=1,
+        provider="azure",
+        event_type="azure_monitor_alert",
+        delivery_id=deliv_str,
+        payload_hash=payload_hash,
+        status="received"
+    )
+    session.add(wb_event)
+    session.commit()
+    session.refresh(wb_event)
+
+
+    # Automatically create Incident
+    from app.models.schemas import Service
+    svc_name = target_resource.split("/")[-1]
+    svc = session.exec(select(Service).where(Service.name == svc_name)).first()
+    service_id = svc.id if svc else 1
+
+    count = session.exec(select(func.count(Incident.id))).one()
+    inc_code = f"INC-AZ-{count + 1:04d}"
+    incident = Incident(
+        org_id=1,
+        incident_code=inc_code,
+        title=f"Cloud Alert: {alert_rule}",
+        service_id=service_id,
+        service_name=svc_name,
+        environment="production",
+        severity=severity,
+        status="investigating",
+        symptoms_summary=f"Cloud Monitor [{alert_rule}]: {description}",
+        detected_at=datetime.now(timezone.utc)
+    )
+    session.add(incident)
+    session.commit()
+    session.refresh(incident)
+
+
+    # Enqueue investigation
+    task_queue.enqueue("investigate_incident", {"incident_id": incident.id})
+
+    return {
+        "status": "accepted",
+        "incident_id": incident.id,
+        "incident_code": incident.incident_code,
+        "alert_rule": alert_rule,
+        "severity": severity,
+        "target_resource": target_resource,
+        "monitoring_service": essentials.get("monitoringService", "Cloud Monitor / APM Telemetry")
+    }

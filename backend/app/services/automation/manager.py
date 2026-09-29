@@ -146,8 +146,6 @@ class AutomationManager:
         session.refresh(action)
 
         start_time = datetime.now(timezone.utc)
-        devops_provider = gitlab_provider if action.provider.lower() == "gitlab" else github_provider
-
         exec_result: Dict[str, Any] = {}
         try:
             if action.is_dry_run:
@@ -158,24 +156,54 @@ class AutomationManager:
                     "provider": action.provider,
                     "details": f"[DRY-RUN] Simulated execution of {action.action_type} on {action.target} without making changes."
                 }
-            elif action.action_type in ["retry", "retry_pipeline"]:
-                exec_result = await devops_provider.retry_pipeline_run(
-                    repo_id=action.repository or "opsmemory/api",
-                    run_id=action.target or "101"
+            elif action.provider.lower() == "kubernetes":
+                from app.services.kubernetes_automation import KubernetesAutomationExecutor
+                from app.services.automation.k8s_ci_executor import AutomationContext
+                k8s_executor = KubernetesAutomationExecutor()
+                k8s_ctx = AutomationContext(
+                    incident_id=action.incident_id or 0,
+                    service_name=action.target or "service",
+                    environment=action.environment,
+                    action=action.action_type,
+                    failure_fingerprint=None,
+                    confidence=1.0,
+                    severity="medium",
+                    known_successful_pattern=True,
+                    provider="kubernetes",
+                    kube_namespace=action.environment if action.environment != "development" else "default",
+                    kube_deployment=action.target,
+                    dry_run=action.is_dry_run,
                 )
-            elif action.action_type in ["restart", "restart_service"]:
-                exec_result = await devops_provider.restart_service(
-                    service_name=action.target or "api-service",
-                    environment=action.environment
-                )
-            elif action.action_type in ["rollback", "rollback_deployment"]:
-                exec_result = await devops_provider.rollback_deployment(
-                    repo_id=action.repository or "opsmemory/api",
-                    target_sha=action.target or "c3f8e12a",
-                    environment=action.environment
-                )
+                if k8s_executor.is_configured:
+                    exec_result = k8s_executor.execute(k8s_ctx)
+                else:
+                    exec_result = {
+                        "status": "simulated",
+                        "provider": "kubernetes",
+                        "target": action.target,
+                        "action": action.action_type,
+                        "details": f"Kubernetes cluster not directly connected. Action {action.action_type} on deployment '{action.target}' recorded for cluster controller."
+                    }
             else:
-                exec_result = {"status": "noop", "details": f"No-op execution for action {action.action_type}"}
+                devops_provider = gitlab_provider if action.provider.lower() == "gitlab" else github_provider
+                if action.action_type in ["retry", "retry_pipeline"]:
+                    exec_result = await devops_provider.retry_pipeline_run(
+                        repo_id=action.repository or "opsmemory/api",
+                        run_id=action.target or "101"
+                    )
+                elif action.action_type in ["restart", "restart_service"]:
+                    exec_result = await devops_provider.restart_service(
+                        service_name=action.target or "api-service",
+                        environment=action.environment
+                    )
+                elif action.action_type in ["rollback", "rollback_deployment"]:
+                    exec_result = await devops_provider.rollback_deployment(
+                        repo_id=action.repository or "opsmemory/api",
+                        target_sha=action.target or "c3f8e12a",
+                        environment=action.environment
+                    )
+                else:
+                    exec_result = {"status": "noop", "details": f"No-op execution for action {action.action_type}"}
 
             action.execution_details = json.dumps(exec_result)
 

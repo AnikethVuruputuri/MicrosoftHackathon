@@ -1,5 +1,5 @@
 import os
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional, List
 
 class Settings(BaseSettings):
@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api"
     DEMO_MODE: bool = True
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    PORT: int = int(os.getenv("PORT", "8001"))
     
     # Security & Auth
     JWT_SECRET: str = os.getenv("JWT_SECRET", "opsmemory-dev-secret-key-change-in-production-32bytes")
@@ -19,8 +20,10 @@ class Settings(BaseSettings):
     # Database (PostgreSQL preferred, SQLite supported)
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./opsmemory.db")
 
-    # Automated remediation stays disabled until a trusted provider is configured.
-    AUTOMATION_ENABLED: bool = os.getenv("AUTOMATION_ENABLED", "true").lower() == "true"
+    # Automation & Self-Recovery Controls
+    AUTOMATION_ENABLED: bool = os.getenv("AUTOMATION_ENABLED", "true").lower() in ("true", "1", "yes")
+    AUTOMATION_DRY_RUN: bool = os.getenv("AUTOMATION_DRY_RUN", "false").lower() in ("true", "1", "yes")
+    AUTOMATION_APPROVAL_REQUIRED: bool = True
     AUTOMATION_CONFIDENCE_THRESHOLD: float = float(os.getenv("AUTOMATION_CONFIDENCE_THRESHOLD", "0.95"))
     AUTOMATION_HEALTH_CHECK_COUNT: int = int(os.getenv("AUTOMATION_HEALTH_CHECK_COUNT", "3"))
     AUTOMATION_HEALTH_CHECK_INTERVAL_SECONDS: int = int(os.getenv("AUTOMATION_HEALTH_CHECK_INTERVAL_SECONDS", "5"))
@@ -55,13 +58,6 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
 
-    # Automation & Self-Recovery
-    AUTOMATION_ENABLED: bool = os.getenv("AUTOMATION_ENABLED", "false").lower() in ("true", "1", "yes")
-    AUTOMATION_DRY_RUN: bool = os.getenv("AUTOMATION_DRY_RUN", "false").lower() in ("true", "1", "yes")
-    AUTOMATION_APPROVAL_REQUIRED: bool = True
-
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()

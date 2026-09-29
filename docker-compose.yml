@@ -39,6 +39,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - PORT=8000
       - DATABASE_URL=postgresql://opsmemory:opsmemory_password@postgres:5432/opsmemory
       - REDIS_URL=redis://redis:6379/0
       - GROQ_API_KEY=${GROQ_API_KEY}
@@ -68,6 +69,7 @@ services:
     command: python -m app.main
     restart: unless-stopped
     environment:
+      - PORT=8000
       - DATABASE_URL=postgresql://opsmemory:opsmemory_password@postgres:5432/opsmemory
       - REDIS_URL=redis://redis:6379/0
       - GROQ_API_KEY=${GROQ_API_KEY}

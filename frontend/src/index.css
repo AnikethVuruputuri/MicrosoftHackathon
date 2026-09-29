@@ -1,54 +1,461 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Design Tokens ───────────────────────────────────── */
 :root {
   color-scheme: light;
+
+  --color-bg-page:       #f4f6fb;
+  --color-bg-surface:    #ffffff;
+  --color-bg-elevated:   #fafbfe;
+  --color-bg-subtle:     #f0f3fa;
+
+  --color-border:        #e2e8f0;
+  --color-border-subtle: #edf0f7;
+
+  --color-text-primary:  #0f172a;
+  --color-text-secondary:#475569;
+  --color-text-muted:    #94a3b8;
+
+  --color-accent:        #4f46e5;
+  --color-accent-light:  #ede9fe;
+  --color-accent-hover:  #4338ca;
+
+  --shadow-xs:  0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-sm:  0 1px 4px 0 rgb(15 23 42 / 0.06), 0 1px 2px -1px rgb(15 23 42 / 0.04);
+  --shadow-md:  0 4px 12px 0 rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.05);
+  --shadow-lg:  0 10px 24px 0 rgb(15 23 42 / 0.1),  0 4px 8px  -4px rgb(15 23 42 / 0.06);
+  --shadow-xl:  0 20px 48px 0 rgb(15 23 42 / 0.12), 0 8px 16px -8px rgb(15 23 42 / 0.08);
+}
+
+/* ─── Base Reset & Typography ─────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  background-color: #f9fafb;
-  color: #111827;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--color-bg-page);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(99, 102, 241, 0.03) 0%, transparent 60%);
+  background-attachment: fixed;
+  color: var(--color-text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 }
 
 code, pre, .font-mono {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+/* ─── Custom Scrollbars ───────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: #cbd5e1;
+  border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* Selection */
+/* ─── Selection & Focus ───────────────────────────────── */
 ::selection {
-  background-color: #dbeafe;
-  color: #1e40af;
+  background-color: #ddd6fe;
+  color: #3730a3;
 }
 
-/* Focus outline */
 *:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Tabular numbers for data */
-.tabular-nums {
+/* ─── Tabular Numbers ─────────────────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ─── Layout Shell ────────────────────────────────────── */
+/* Sidebar */
+aside,
+[class*="sidebar"],
+nav[class*="side"] {
+  background: var(--color-bg-surface) !important;
+  border-right: 1px solid var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Main content area */
+main,
+[class*="main-content"],
+[class*="content-area"] {
+  background: transparent !important;
+}
+
+/* ─── Cards ───────────────────────────────────────────── */
+.bg-white {
+  background-color: var(--color-bg-surface) !important;
+}
+
+/* All cards get a refined shadow + border */
+.bg-white.border,
+.bg-white.rounded-lg,
+.bg-white.rounded-xl {
+  border-color: var(--color-border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.bg-white.border:hover,
+.bg-white.rounded-lg:hover,
+.bg-white.rounded-xl:hover {
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Gray backgrounds in cards */
+.bg-gray-50 {
+  background-color: var(--color-bg-subtle) !important;
+}
+
+/* ─── Sidebar Nav Links ────────────────────────────────── */
+nav a,
+nav [role="link"],
+nav button {
+  border-radius: 8px !important;
+  transition: background-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease !important;
+}
+
+nav a:hover,
+nav [role="link"]:hover {
+  background-color: var(--color-bg-subtle) !important;
+}
+
+/* Active nav item */
+nav a[aria-current="page"],
+nav a.active,
+.nav-item-active {
+  background: linear-gradient(135deg, #ede9fe 0%, #e0f2fe 100%) !important;
+  color: var(--color-accent) !important;
+  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* ─── Buttons ─────────────────────────────────────────── */
+button {
+  cursor: pointer;
+  transition: all 0.16s ease !important;
+  font-family: inherit !important;
+}
+
+/* Primary (blue) buttons */
+.bg-blue-600, .bg-blue-700 {
+  background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%) !important;
+  border: none !important;
+  box-shadow: 0 1px 3px 0 rgba(79, 70, 229, 0.25), 0 1px 2px -1px rgba(79, 70, 229, 0.15) !important;
+  letter-spacing: 0.01em;
+}
+
+.bg-blue-600:hover, .bg-blue-700:hover,
+.hover\:bg-blue-700:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 4px 12px 0 rgba(79, 70, 229, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+
+.bg-blue-600:active, .bg-blue-700:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 2px 0 rgba(79, 70, 229, 0.2) !important;
+}
+
+/* Emerald / success buttons */
+.bg-emerald-600:hover, .hover\:bg-emerald-500:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px 0 rgba(5, 150, 105, 0.3) !important;
+}
+
+/* Amber / warning buttons */
+.bg-amber-500:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px 0 rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Destructive / rose buttons */
+.bg-rose-600:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px 0 rgba(225, 29, 72, 0.3) !important;
+}
+
+/* Small icon buttons */
+.p-1\.5.rounded-md,
+.p-2.rounded-lg,
+.p-2.rounded-md {
+  transition: background-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease !important;
+}
+
+/* ─── Status Badges ───────────────────────────────────── */
+.bg-emerald-50 { background-color: #f0fdf4 !important; }
+.bg-amber-50   { background-color: #fffbeb !important; }
+.bg-red-50,
+.bg-rose-50    { background-color: #fff1f2 !important; }
+.bg-blue-50    { background-color: #eff6ff !important; }
+.bg-purple-50  { background-color: #faf5ff !important; }
+.bg-indigo-50  { background-color: #eef2ff !important; }
+.bg-gray-100   { background-color: #f1f5f9 !important; }
+
+/* Severity badge text sharpness */
+[class*="text-emerald"],
+[class*="text-amber"],
+[class*="text-red"],
+[class*="text-rose"],
+[class*="text-blue"],
+[class*="text-indigo"],
+[class*="text-purple"] {
+  font-weight: 600 !important;
+}
+
+/* ─── Tables ──────────────────────────────────────────── */
+table { border-collapse: separate; border-spacing: 0; }
+
+thead tr th {
+  font-size: 10.5px !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  color: var(--color-text-muted) !important;
+  background: var(--color-bg-subtle) !important;
+}
+
+tbody tr {
+  transition: background-color 0.12s ease;
+}
+
+tbody tr:hover {
+  background-color: var(--color-bg-elevated) !important;
+}
+
+/* ─── Form Inputs ─────────────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="search"],
+select,
+textarea {
+  font-family: inherit !important;
+  font-size: 13.5px !important;
+  background-color: var(--color-bg-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  color: var(--color-text-primary) !important;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease !important;
+  padding: 8px 12px !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12) !important;
+  outline: none !important;
+}
+
+/* ─── Metrics / Stat Cards ────────────────────────────── */
+/* Elevate key metric numbers */
+.text-2xl.font-bold,
+.text-3xl.font-bold,
+.text-xl.font-bold {
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+/* ─── Section Dividers ────────────────────────────────── */
+.border-b.border-gray-200,
+.border-b.border-gray-100 {
+  border-color: var(--color-border-subtle) !important;
+}
+
+/* ─── TopBar ──────────────────────────────────────────── */
+header,
+[class*="topbar"],
+[class*="top-bar"] {
+  background: rgba(255,255,255,0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  box-shadow: 0 1px 0 0 var(--color-border), var(--shadow-xs) !important;
+}
+
+/* ─── Modal Overlays ──────────────────────────────────── */
+.fixed.inset-0.z-50 {
+  animation: fadeInOverlay 0.18s ease forwards;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Modal panels */
+.fixed.inset-0.z-50 > div:not(.bg-slate-900):not(.bg-slate-950) {
+  animation: slideUpPanel 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUpPanel {
+  from { transform: translateY(8px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+
+/* ─── Notification / Alert Banners ───────────────────── */
+.bg-emerald-50.border-emerald-200 {
+  border-left: 3px solid #10b981 !important;
+}
+
+.bg-red-50.border-red-200,
+.bg-rose-50.border-rose-500\/10 {
+  border-left: 3px solid #f43f5e !important;
+}
+
+.bg-amber-50.border-amber-200 {
+  border-left: 3px solid #f59e0b !important;
+}
+
+.bg-blue-50.border-blue-200 {
+  border-left: 3px solid #3b82f6 !important;
+}
+
+/* ─── Code Blocks / Pre ───────────────────────────────── */
+pre {
+  border-radius: 10px !important;
+  background: #0f172a !important;
+  color: #e2e8f0 !important;
+  padding: 16px !important;
+  font-size: 12.5px !important;
+  line-height: 1.7 !important;
+  overflow-x: auto;
+  border: 1px solid #1e293b !important;
+}
+
+/* ─── Skeleton / Loading Pulse ────────────────────────── */
+.animate-pulse {
+  animation: pulse 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* ─── Spinner ─────────────────────────────────────────── */
+.animate-spin {
+  animation: spin 0.75s linear infinite !important;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Stage Tracker nodes ─────────────────────────────── */
+[class*="stage-node"],
+[class*="stageNode"],
+svg circle {
+  transition: fill 0.3s ease, stroke 0.3s ease, filter 0.3s ease;
+}
+
+/* ─── Micro-interactions on metric tiles ──────────────── */
+.grid .bg-white {
+  transition: box-shadow 0.2s ease, transform 0.2s ease !important;
+}
+
+.grid .bg-white:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* ─── Text Utilities ──────────────────────────────────── */
+h1, h2, h3, h4, h5 {
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+
+.text-xs  { font-size: 11.5px !important; line-height: 1.5 !important; }
+.text-sm  { font-size: 13px   !important; line-height: 1.55 !important; }
+.text-base{ font-size: 14.5px !important; }
+
+/* Section labels */
+.text-\[10px\],
+.text-\[11px\] {
+  letter-spacing: 0.06em !important;
+}
+
+/* ─── Icon Containers ─────────────────────────────────── */
+.rounded-lg.border,
+.rounded-xl.border {
+  transition: box-shadow 0.16s ease !important;
+}
+
+/* ─── Inline Tag / Chip ───────────────────────────────── */
+.rounded-full {
+  letter-spacing: 0.025em;
+}
+
+/* ─── Separator Lines ─────────────────────────────────── */
+hr,
+.divide-y > * + * {
+  border-color: var(--color-border-subtle) !important;
+}
+
+/* ─── Subtle gradient header for page sections ────────── */
+.pb-4.border-b.border-gray-200 {
+  padding-bottom: 16px !important;
+}
+
+/* ─── LearningTimeline component ──────────────────────── */
+.relative.pl-6::before {
+  content: '';
+  position: absolute;
+  left: 7px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #e2e8f0 0%, transparent 100%);
+  border-radius: 1px;
+}
+
+/* ─── Search Modal ────────────────────────────────────── */
+[class*="SearchModal"],
+[class*="search-modal"] {
+  animation: slideUpPanel 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Tooltip-like small hover callouts ──────────────── */
+[title]:hover::after {
+  pointer-events: none;
+}
+
+/* ─── Print Styles ────────────────────────────────────── */
+@media print {
+  body {
+    background: white !important;
+    background-image: none !important;
+  }
+
+  .fixed,
+  nav,
+  aside,
+  header,
+  button:not(.print-include) {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
 }

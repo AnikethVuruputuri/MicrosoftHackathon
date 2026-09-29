@@ -205,3 +205,40 @@ def test_automation_feedback_and_dashboard():
     assert "metrics" in dash_data
     assert "recent_actions" in dash_data
     assert "policy" in dash_data
+
+
+def test_incident_diagnosis_proposes_automation_action():
+    import uuid
+    uid = uuid.uuid4().hex[:8]
+    with Session(engine) as session:
+        inc = Incident(
+            incident_code=f"INC-DIAG-{uid}",
+            title="Payment Gateway GatewayTimeout",
+            service_id=1,
+            service_name="payment-api",
+            environment="production",
+            severity="high",
+            status="investigating",
+            symptoms_summary="HTTP 504 Gateway Timeout on checkout endpoints"
+        )
+        session.add(inc)
+        session.commit()
+        session.refresh(inc)
+        inc_id = inc.id
+
+    # Run diagnose endpoint
+    resp = client.post(f"/api/incidents/{inc_id}/diagnose")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "success"
+    assert "automation_candidate" in data
+    assert data["automation_candidate"] is not None
+
+    # Verify an AutomationAction proposal was recorded in database
+    with Session(engine) as session:
+        actions = session.exec(
+            select(AutomationAction).where(AutomationAction.incident_id == inc_id)
+        ).all()
+        assert len(actions) >= 1
+        assert actions[0].status in ["awaiting_approval", "pending", "blocked"]
+

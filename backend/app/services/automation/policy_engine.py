@@ -82,6 +82,52 @@ class AutomationPolicyEngine:
             return RiskLevel.VERY_HIGH
         return RiskLevel.CONTROLLED
 
+    def calculate_blast_radius(self, action_type: str, environment: str = "production") -> Dict[str, Any]:
+        """
+        Calculates blast-radius limits adhering to enterprise Safe Deployment Practices (SDP):
+        - Canary strategy (e.g. 1 pod / 10% traffic first)
+        - Verification window before full rollout
+        - Maximum affected replicas
+        """
+        action = (action_type or "").lower().strip()
+        is_prod = environment.lower() == "production"
+
+        if action in ["retry", "retry_pipeline"]:
+            return {
+                "strategy": "isolated_pipeline",
+                "canary_percentage": 100,
+                "blast_radius": "minimal",
+                "max_affected_instances": 1,
+                "verification_seconds": 15,
+                "rollback_on_failure": True
+            }
+        elif action in ["restart", "restart_service"]:
+            return {
+                "strategy": "canary_single_pod" if is_prod else "full_service",
+                "canary_percentage": 10 if is_prod else 100,
+                "blast_radius": "limited" if is_prod else "controlled",
+                "max_affected_instances": 1 if is_prod else 5,
+                "verification_seconds": 20,
+                "rollback_on_failure": True
+            }
+        elif action in ["rollback", "rollback_deployment"]:
+            return {
+                "strategy": "progressive_canary_rollback",
+                "canary_percentage": 25 if is_prod else 100,
+                "blast_radius": "high",
+                "max_affected_instances": 2 if is_prod else 10,
+                "verification_seconds": 30,
+                "rollback_on_failure": True
+            }
+        return {
+            "strategy": "zero_mutation",
+            "canary_percentage": 0,
+            "blast_radius": "none",
+            "max_affected_instances": 0,
+            "verification_seconds": 0,
+            "rollback_on_failure": False
+        }
+
     def evaluate(
         self,
         action_type: str,

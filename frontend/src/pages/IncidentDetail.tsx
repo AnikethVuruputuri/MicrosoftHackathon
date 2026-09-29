@@ -37,8 +37,13 @@ import {
   ShieldCheck,
   ThumbsUp,
   ThumbsDown,
-  RotateCcw
+  RotateCcw,
+  FileText,
+  MessageSquare
 } from 'lucide-react';
+import { PostMortemModal } from '../components/PostMortemModal';
+import { TeamsCardModal } from '../components/TeamsCardModal';
+
 
 export const IncidentDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,6 +80,9 @@ export const IncidentDetail: React.FC = () => {
   );
 
   const [retainedSuccessMsg, setRetainedSuccessMsg] = useState<string | null>(null);
+  const [showPostMortem, setShowPostMortem] = useState<boolean>(false);
+  const [showTeamsCard, setShowTeamsCard] = useState<boolean>(false);
+
 
   const loadData = async () => {
     if (isNaN(incidentId)) return;
@@ -225,25 +233,49 @@ export const IncidentDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Investigate Action Button */}
-        <button
-          onClick={handleInvestigate}
-          disabled={investigating}
-          className="flex items-center space-x-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm disabled:opacity-50 transition-all"
-        >
-          {investigating ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Executing Agent...</span>
-            </>
-          ) : (
-            <>
-              <Play className="w-4 h-4 fill-current" />
-              <span>Investigate</span>
-            </>
-          )}
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-2">
+          {/* War Room Chat Preview */}
+          <button
+            onClick={() => setShowTeamsCard(true)}
+            className="flex items-center space-x-1.5 px-3 py-2 rounded-md bg-[#5B5FC7] hover:bg-[#4F52B2] text-white text-xs font-semibold shadow-sm transition-all"
+            title="Preview Incident War Room Notification Card"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>War Room</span>
+          </button>
+
+          {/* Post-Mortem & RCA Export */}
+          <button
+            onClick={() => setShowPostMortem(true)}
+            className="flex items-center space-x-1.5 px-3 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold shadow-sm border border-slate-700 transition-all"
+            title="Export Post-Mortem & RCA Report"
+          >
+            <FileText className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Post-Mortem &amp; RCA</span>
+          </button>
+
+          {/* Investigate Action Button */}
+          <button
+            onClick={handleInvestigate}
+            disabled={investigating}
+            className="flex items-center space-x-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm disabled:opacity-50 transition-all"
+          >
+            {investigating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Executing Agent...</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 fill-current" />
+                <span>Investigate</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
 
       {/* Retained Alert Banner */}
       {retainedSuccessMsg && (
@@ -506,9 +538,56 @@ export const IncidentDetail: React.FC = () => {
                 </h3>
               </div>
 
+              {/* Quick Preset Buttons for Hackathon Live Demo */}
+
+              <div className="mb-4 p-3 bg-amber-50/70 border border-amber-200/80 rounded-lg">
+                <span className="text-[11px] font-semibold text-amber-800 uppercase tracking-wide block mb-2">
+                  ⚡ Quick Demo Presets (1-Click Fill for Live Pitch)
+                </span>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEngineerName('Satya SRE (On-Call)');
+                      setCorrectionText('Redis timeout was downstream symptom. Actual root cause is PostgreSQL connection pool exhaustion (20/20 active limit).');
+                      setActualRootCause('PostgreSQL connection pool exhaustion');
+                      setSuggestedAction('Increase DB pool size from 20 to 100 & rollback bad commit');
+                    }}
+                    className="px-2.5 py-1 rounded bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium transition-colors shadow-xs"
+                  >
+                    DB Pool Exhaustion (Redis downstream)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEngineerName('Principal SRE Lead');
+                      setCorrectionText('Helm values file set bad redis host env var in production namespace.');
+                      setActualRootCause('Malformed REDIS_HOST env var in Helm values.yaml');
+                      setSuggestedAction('Rollback Helm deployment to revision 4');
+                    }}
+                    className="px-2.5 py-1 rounded bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium transition-colors shadow-xs"
+                  >
+                    Bad Helm ConfigMap
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEngineerName('Live-Site SRE');
+                      setCorrectionText('Node heap limit saturated due to memory leak on concurrent checkout threads.');
+                      setActualRootCause('Memory leak in checkout worker threadpool');
+                      setSuggestedAction('Canary Rollback to v2.4.0 with Pod drain');
+                    }}
+                    className="px-2.5 py-1 rounded bg-white hover:bg-amber-100 text-amber-900 border border-amber-300 font-medium transition-colors shadow-xs"
+                  >
+                    Canary OOM Leak
+                  </button>
+                </div>
+              </div>
+
               <form onSubmit={handleSubmitCorrection} className="space-y-4 text-sm">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Engineer Name / On-Call</label>
+
                   <input
                     type="text"
                     value={engineerName}
@@ -692,6 +771,20 @@ export const IncidentDetail: React.FC = () => {
 
       </div>
 
+      {/* Post-Mortem & Teams Modals */}
+      <PostMortemModal
+        isOpen={showPostMortem}
+        incidentId={incidentId}
+        onClose={() => setShowPostMortem(false)}
+      />
+      <TeamsCardModal
+        isOpen={showTeamsCard}
+        incidentId={incidentId}
+        onClose={() => setShowTeamsCard(false)}
+        onActionTriggered={loadData}
+      />
+
     </div>
   );
 };
+

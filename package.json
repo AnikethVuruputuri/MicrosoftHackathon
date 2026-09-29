@@ -1,0 +1,23 @@
+{
+  "name": "opsmemory-devops-platform",
+  "version": "1.0.0",
+  "description": "> **\"Your DevOps agent that remembers what your team learned.\"**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AnikethVuruputuri/MicrosoftHackathon.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AnikethVuruputuri/MicrosoftHackathon/issues"
+  },
+  "homepage": "https://github.com/AnikethVuruputuri/MicrosoftHackathon#readme"
+}

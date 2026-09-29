@@ -515,3 +515,46 @@ export async function updateAutomationSettings(
   return res.json();
 }
 
+export interface PostMortemData {
+  incident_code: string;
+  title: string;
+  service: string;
+  environment: string;
+  severity: string;
+  status: string;
+  mttr_seconds: number;
+  root_cause: string;
+  remediation_applied: string;
+  failure_fingerprint?: string;
+  timeline: Array<{
+    id: number;
+    incident_id: number;
+    event_type: string;
+    stage_name?: string;
+    summary: string;
+    details?: string;
+    created_at: string;
+  }>;
+  markdown_report: string;
+}
+
+export interface TeamsCardData {
+  incident_code: string;
+  channel: string;
+  action_code: string;
+  adaptive_card: Record<string, any>;
+}
+
+export async function fetchIncidentPostMortem(incidentId: number): Promise<PostMortemData> {
+  const res = await fetch(`${API_BASE}/incidents/${incidentId}/post-mortem`);
+  if (!res.ok) throw new Error('Failed to fetch incident post-mortem');
+  return res.json();
+}
+
+export async function fetchIncidentTeamsCard(incidentId: number): Promise<TeamsCardData> {
+  const res = await fetch(`${API_BASE}/incidents/${incidentId}/teams-card`);
+  if (!res.ok) throw new Error('Failed to fetch incident war room card');
+  return res.json();
+}
+
+

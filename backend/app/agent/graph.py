@@ -8,6 +8,7 @@ from app.agent.nodes import (
     check_historical_corrections_node,
     analyze_incident_node,
     generate_diagnosis_node,
+    evaluate_automation_candidate_node,
     handle_correction_node,
     resolution_node,
     retain_learning_node
@@ -28,11 +29,12 @@ def create_opsmemory_graph():
     builder.add_node("check_historical_corrections", check_historical_corrections_node)
     builder.add_node("analyze_incident", analyze_incident_node)
     builder.add_node("generate_diagnosis", generate_diagnosis_node)
+    builder.add_node("evaluate_automation", evaluate_automation_candidate_node)
     builder.add_node("handle_correction", handle_correction_node)
     builder.add_node("resolution", resolution_node)
     builder.add_node("retain_learning", retain_learning_node)
 
-    # Linear workflow from START to generate_diagnosis
+    # Linear workflow from START to evaluate_automation
     builder.add_edge(START, "load_incident")
     builder.add_edge("load_incident", "generate_fingerprint")
     builder.add_edge("generate_fingerprint", "recall_memory")
@@ -40,10 +42,11 @@ def create_opsmemory_graph():
     builder.add_edge("collect_evidence", "check_historical_corrections")
     builder.add_edge("check_historical_corrections", "analyze_incident")
     builder.add_edge("analyze_incident", "generate_diagnosis")
+    builder.add_edge("generate_diagnosis", "evaluate_automation")
 
     # Conditional human review branch
     builder.add_conditional_edges(
-        "generate_diagnosis",
+        "evaluate_automation",
         route_human_review,
         {
             "handle_correction": "handle_correction",
